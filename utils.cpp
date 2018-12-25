@@ -14,6 +14,7 @@
 
 namespace graph {
   namespace utils {
+    
     torch::data::Example<> parseLibSVM(std::string str) {
 
       std::vector<std::string> strings;
@@ -41,6 +42,31 @@ namespace graph {
       for (size_t i = 0; i < size; i++) values[i] = vals[i];
 
       auto data = at::sparse_coo_tensor(indices, values);
+      return {data, label};
+    }
+    
+    torch::data::Example<> parseLibSVM(std::string str, size_t n_dim) {
+      auto data = torch::zeros(n_dim, torch::TensorOptions().dtype(torch::kFloat32));
+      
+      std::istringstream f(str);
+      std::string s, t;
+      
+      // label
+      getline(f, s, ' ');
+      float l = std::stof(s);
+      if (l < 0.0) l = 0.0;
+      auto label = torch::tensor(l);
+      
+      // kvs
+      while (getline(f, s, ' ')) {
+        std::istringstream kv(s);
+        getline(kv, t, ':');
+        int k = std::stoi(t);
+        getline(kv, t, ':');
+        float v = std::stof(t);
+        data[k] = v;
+      }
+      
       return {data, label};
     }
   };

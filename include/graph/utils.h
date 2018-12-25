@@ -8,9 +8,12 @@
 #include <torch/torch.h>
 
 namespace graph {
+  
   namespace utils {
 
     torch::data::Example<> parseLibSVM(std::string str);
+    
+    torch::data::Example<> parseLibSVM(std::string str, size_t n_dim);
 
   };
 };
