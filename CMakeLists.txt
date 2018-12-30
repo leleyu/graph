@@ -8,8 +8,8 @@ find_package(Torch REQUIRED)
 
 include_directories("include/")
 
-add_executable(graph main.cpp include/graph/utils.h utils.cpp include/graph/libsvm.h)
-add_executable(test test.cpp)
+add_executable(graph main.cpp include/graph/utils.h utils.cpp include/graph/libsvm.h include/graph/model.h)
+add_executable(test test.cpp include/graph/model.h)
 
 target_link_libraries(graph ${TORCH_LIBRARIES})
 target_link_libraries(test ${TORCH_LIBRARIES})

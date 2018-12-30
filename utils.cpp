@@ -23,7 +23,11 @@ namespace graph {
 
       // label
       getline(f, s, ' ');
-      auto label = at::tensor(std::stoi(s));
+      float l = std::stof(s);
+      if (l < 0.0) l = 0.0;
+      auto label = torch::tensor(l);
+
+      // kvs
       std::vector<int> keys;
       std::vector<float> vals;
 
@@ -36,12 +40,15 @@ namespace graph {
       }
 
       int size = keys.size();
-      auto indices = at::zeros({1, size}, at::TensorOptions().dtype(at::kLong));
-      for (size_t i = 0; i < size; i++) indices[0][i] = keys[i];
+      // indices
+      auto indices = at::zeros({2, size}, at::TensorOptions().dtype(at::kLong));
+      for (size_t i = 0; i < size; i ++) indices[0][i] = 0;
+      for (size_t i = 0; i < size; i ++) indices[1][i] = keys[i];
+      // values
       auto values  = at::zeros(size, at::TensorOptions().dtype(at::kFloat));
-      for (size_t i = 0; i < size; i++) values[i] = vals[i];
+      for (size_t i = 0; i < size; i ++) values[i] = vals[i];
 
-      auto data = at::sparse_coo_tensor(indices, values);
+      auto data = torch::sparse_coo_tensor(indices, values, {1, 124});
       return {data, label};
     }
     

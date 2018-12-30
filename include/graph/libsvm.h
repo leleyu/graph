@@ -16,7 +16,7 @@ struct LibsvmDataset : torch::data::datasets::Dataset<LibsvmDataset> {
     std::ifstream in(path);
     std::string line;
     while (std::getline(in, line)) {
-      auto example = graph::utils::parseLibSVM(line, n_dim);
+      auto example = graph::utils::parseLibSVM(line);
       examples.push_back(example);
     }
 

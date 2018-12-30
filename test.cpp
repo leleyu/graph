@@ -4,6 +4,7 @@
 
 #include "torch/data.h"
 #include "torch/torch.h"
+#include "graph/model.h"
 
 #include <vector>
 #include <iostream>
@@ -125,6 +126,61 @@ void test_loader() {
 
 }
 
+void test_mm() {
+  auto x = torch::ones({1, 10});
+//  auto y = torch::ones({3, 5});
+//  auto z = torch::mm(x, y.t());
+
+//  auto xs = x.to_sparse();
+
+//  std::cout << xs << std::endl;
+
+//  std::cout << xs.dim() << std::endl;
+//  std::cout << xs.size(0) << std::endl;
+
+//  std::cout << torch::_sparse_mm(xs, x.t()) << std::endl;
+
+  auto indices = at::zeros({2, 5}, torch::TensorOptions().dtype(torch::kLong));
+  for (int a = 0; a < 5; a ++) indices[0][a] = 0;
+  for (int a = 0; a < 5; a ++) indices[1][a] = a;
+//
+  auto values  = at::ones(5);
+  auto sparse = torch::sparse_coo_tensor(indices, values, {1, 10});
+
+  std::cout << sparse << std::endl;
+  std::cout << torch::_sparse_mm(sparse, x.t()) << std::endl;
+
+
+}
+
+void test_parameters() {
+  LogisticRegression lr(10);
+  auto parameters = lr.parameters();
+  for (int i = 0; i < parameters.size(); i ++) {
+    auto & v = parameters[i];
+    std::cout << v << std::endl;
+  }
+}
+
+void test_sparse_gradient() {
+  auto options = torch::TensorOptions().requires_grad(true);
+  auto a = torch::ones({2, 4}, options);
+  auto b = a.to_sparse();
+
+  auto c = torch::_sparse_mm(b, a.t());
+  std::cout << c << std::endl;
+
+  c.backward();
+
+  std::cout << a.grad() << std::endl;
+
+}
+
+void test_random() {
+  auto a = torch::rand({10, 2});
+  std::cout << a << std::endl;
+}
+
 
 int main() {
 //  DummyDataset d;
@@ -136,7 +192,11 @@ int main() {
 //  test_sampler();
 //  test_cat_tensors();
 //  test_sparse_tensor();
-  test_loader();
+//  test_loader();
+//  test_mm();
+//  test_parameters();
+//  test_sparse_gradient();
+  test_random();
   return 0;
 }
 

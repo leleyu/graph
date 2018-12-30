@@ -2,23 +2,7 @@
 #include "torch/torch.h"
 #include "graph/utils.h"
 #include "graph/libsvm.h"
-
-
-struct LogisticRegression: torch::nn::Module {
-public:
-
-  explicit LogisticRegression(size_t n_dim) {
-    fc = register_module("fc1", torch::nn::Linear(n_dim, 1));
-  }
-  
-  torch::Tensor forward(torch::Tensor x) {
-    x = torch::sigmoid(fc->forward(x));
-    return x;
-  }
-
-private:
-  torch::nn::Linear fc{nullptr};
-};
+#include "graph/model.h"
 
 
 
@@ -28,7 +12,6 @@ void train(const std::string input, size_t n_dim, size_t batch_size) {
   auto options = torch::data::DataLoaderOptions(batch_size);
   auto samplers = torch::data::samplers::SequentialSampler(dataset.size().value());
   auto data_loader = torch::data::make_data_loader(dataset, options, samplers);
-
 
   LogisticRegression lr(n_dim);
 
