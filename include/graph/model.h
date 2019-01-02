@@ -37,20 +37,26 @@ private:
 struct MeanAggregator: nn::Module {
 public:
   explicit MeanAggregator(size_t input_dim, size_t output_dim) {
+    auto options = nn::LinearOptions(input_dim, output_dim);
+    options.with_bias_ = false;
 
+    fc_nodes = register_module("fc_nodes", nn::Linear(options));
+    fc_neibours = register_module("fc_neibours", nn::Linear(options));
   }
 
-  Tensor forward(Tensor x) {
+  /**
+   * Aggregates features from neibours
+   * @param nodes: features for nodes in current batch
+   * @param neibours: features for neibours in current batch
+   * @return: the aggregated feature
+   */
+  Tensor forward(const Tensor& nodes, const Tensor& neibours) {
+    auto aggr_neibours = neibours.mean(1);
 
   }
-
 
 private:
-  size_t input_dim;
-  size_t output_dim;
-  nn::Linear fc1{nullptr};
-
-
+  nn::Linear fc_nodes{nullptr}, fc_neibours{nullptr};
 };
 
 struct GraphSage : torch::nn::Module {

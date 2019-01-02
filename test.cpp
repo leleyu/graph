@@ -181,6 +181,39 @@ void test_random() {
   std::cout << a << std::endl;
 }
 
+void test_view() {
+  auto a = torch::zeros({1, 10});
+  auto b = a.view({2, 3, -1});
+  std::cout << b << std::endl;
+}
+
+void test_mean() {
+  auto a = torch::ones({2, 10});
+  auto b = a.mean({1});
+  auto c = a.sum({1});
+  std::cout << b << std::endl;
+  std::cout << c << std::endl;
+
+  auto d = torch::ones({3, 2, 10});
+  auto e = d.mean(1);
+  std::cout << d << std::endl;
+  std::cout << e << std::endl;
+}
+
+void test_embedding() {
+  auto e = torch::nn::Embedding(10, 20);
+  auto weight = e.get()->weight;
+  for (int i = 0; i < 10; i ++)
+    for (int j = 0; j < 20; j ++)
+      weight[i][j] = i;
+
+  std::cout << e.get() << std::endl;
+  auto indices = torch::zeros({2}, TensorOptions().dtype(torch::kInt64));
+  indices[0] = 0; indices[1] = 5;
+  auto r = e.get()->forward(indices);
+  std::cout << r << std::endl;
+}
+
 
 int main() {
 //  DummyDataset d;
@@ -196,7 +229,10 @@ int main() {
 //  test_mm();
 //  test_parameters();
 //  test_sparse_gradient();
-  test_random();
+//  test_random();
+//  test_view();
+  test_mean();
+//  test_embedding();
   return 0;
 }
 
