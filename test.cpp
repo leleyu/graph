@@ -5,11 +5,14 @@
 #include "torch/data.h"
 #include "torch/torch.h"
 #include "graph/model.h"
+#include "graph/dataset.h"
 
 #include <vector>
 #include <iostream>
+#include <unordered_map>
 
 using namespace torch::data;
+using namespace torch;
 
 struct DummyDataset : datasets::Dataset<DummyDataset, int> {
   explicit DummyDataset(size_t size = 100) : size_(size) {}
@@ -91,8 +94,10 @@ void test_cat_tensors() {
   for (auto tensor : list) {
     std::cout << tensor << std::endl;
   }
-  std::cout << torch::cat(list, 0) << std::endl;
-  std::cout << torch::stack(list, 0) << std::endl;
+  std::cout << torch::cat(list, 1) << std::endl;
+
+  torch::TensorList list2({torch::zeros({1, 10}), torch::ones({1, 10})});
+  std::cout << torch::cat(list2, 1) << std::endl;
 }
 
 void test_sparse_tensor() {
@@ -214,6 +219,177 @@ void test_embedding() {
   std::cout << r << std::endl;
 }
 
+void test_embedding_indices() {
+  auto features = torch::nn::Embedding(10, 5);
+  auto weight = features.get()->weight;
+  for (int i = 0; i < 10; i ++)
+    for (int j = 0; j < 5; j ++)
+      weight[i][j] = i;
+
+
+  auto indices = torch::zeros({2, 4}, TensorOptions().dtype(torch::kInt64));
+  for (int i = 0; i < 2; i ++)
+    for (int j = 0; j < 4; j ++)
+      indices[i][j] = j;
+
+  auto r = features.get()->forward(indices);
+  std::cout << r << std::endl;
+}
+
+void test_tensor_ref() {
+  torch::Tensor t;
+  std::cout << t.size(0) << std::endl;
+}
+
+void test_adj_dataset() {
+  std::string path = "../data/cora/cora.adjs";
+  graph::dataset::AdjList adj;
+  graph::dataset::load_edges(path, &adj);
+
+  std::cout << adj.starts.size() << std::endl;
+  std::cout << adj.dsts.size() << std::endl;
+
+  for (auto item: adj.src_to_index) {
+    std::cout << "src=" << item.first << std::endl;
+    int index = item.second;
+
+    for (int i = adj.starts[index]; i < adj.starts[index + 1]; i ++) {
+      std::cout << adj.dsts[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cin.get();
+  }
+}
+
+void test_node_features() {
+  std::string path = "../data/cora/cora.content.id";
+  using namespace graph::dataset;
+  Nodes nodes;
+  load_features(path, &nodes, 1433, 2708);
+
+  auto& features = nodes.features;
+  auto& labels = nodes.labels;
+  for (int i = 0; i < 2708; i ++) {
+    std::cout << labels[i].item().toFloat() << std::endl;
+    auto f = features[i];
+    auto size = f.size(0);
+    for (int j = 0; j < size; j ++)
+      if (f[j].item().toFloat() > 0) std::cout << j << " ";
+    std::cout << std::endl;
+    std::cin.get();
+  }
+}
+
+void test_tensor_assign() {
+  auto a = torch::zeros({3, 5});
+  a[0][0] = 1;
+
+  std::vector<float> data = {0, 1, 2, 3, 4};
+  data.resize(5);
+  std::cout << data << std::endl;
+//  memcpy(a.data_ptr(), static_cast<void*>(data.data()), 5);
+
+  float* ptr = static_cast<float*>(a.data_ptr());
+
+  memcpy(static_cast<void*>(ptr + 5), static_cast<void*>(data.data()), 5*sizeof(float));
+//  ptr[0] = 0.1;
+  std::cout << a << std::endl;
+
+  a[2] = torch::ones({5});
+  std::cout << a << std::endl;
+}
+
+void test_tensor_get() {
+  auto x = torch::zeros({2}, torch::TensorOptions().dtype(torch::kInt32));
+  float* ptr = static_cast<float*>(x.data_ptr());
+  std::cout << ptr[0] << std::endl;
+}
+
+void test_unorderred_map() {
+  std::unordered_map<int, int> map;
+  map[1] = 0;
+  std::cout << map[1] << std::endl;
+  auto v = map.find(1);
+  std::cout << v->second << std::endl;
+
+  v = map.find(2);
+  std::cout << (v == map.end()) << std::endl;
+//  std::cout << v->second << std::endl;
+}
+
+void test_tensor_indices() {
+  auto t = torch::ones({4, 10});
+  t[0] = 2;
+  std::cout << t << std::endl;
+  auto indice = torch::ones({2}, TensorOptions().dtype(kInt32));
+  std::cout << indice << std::endl;
+  std::cout << indice.dim() << std::endl;
+  int j = 0;
+
+  std::cout << t[j] << std::endl;
+}
+
+void test_tensor_copy(Tensor x) {
+  std::cout << x.use_count() << std::endl;
+  auto y = x[0];
+  std::cout << x.use_count() << std::endl;
+
+}
+
+
+void test_tensor_copy() {
+  auto x = torch::randn({3, 5});
+//  std::cout << x.use_count() << std::endl;
+//  test_tensor_copy(x);
+//  std::cout << x.use_count() << std::endl;
+
+  auto y = x.relu();
+
+  std::cout << x << std::endl;
+  std::cout << y << std::endl;
+}
+
+torch::Tensor allocate() {
+  return torch::ones({5});
+}
+
+void test_tensor_allocate() {
+  auto a = allocate();
+  std::cout << a << std::endl;
+  std::cout << a.use_count() << std::endl;
+}
+
+void test_cross_entropy_loss() {
+//  auto input = torch::randn({3, 5});
+//  input.set_requires_grad(false);
+//
+//  auto target = torch::empty({3}, TensorOptions().dtype(kInt64));
+//  target.random_(5);
+//
+//  std::cout << torch::softmax(input, 0) << std::endl;
+//
+//  auto output = torch::nll_loss(torch::log_softmax(input, 1), target);
+//  std::cout << output << std::endl;
+
+  auto input = torch::zeros({3, 5});
+  std::vector<float> v = {-0.1414,  0.4857, -1.7201,  0.6922, -1.3067,
+            0.4282, -0.7197,  0.1772, -1.0167,  0.7329,
+            1.0204, -0.2235,  0.2687, -1.3497, -1.4210};
+  memcpy(input.data_ptr(), v.data(), 15*sizeof(float));
+
+  std::cout << input << std::endl;
+
+  auto target = torch::empty({3}, TensorOptions().dtype(kInt64));
+  target[0] = 3;
+  target[1] = 4;
+  target[2] = 0;
+
+  auto output = torch::nll_loss(torch::log_softmax(input, 1), target);
+
+  std::cout << output << std::endl;
+}
+
+
 
 int main() {
 //  DummyDataset d;
@@ -223,7 +399,7 @@ int main() {
 
 //  tensor_dense_test();
 //  test_sampler();
-//  test_cat_tensors();
+// test_cat_tensors();
 //  test_sparse_tensor();
 //  test_loader();
 //  test_mm();
@@ -231,8 +407,19 @@ int main() {
 //  test_sparse_gradient();
 //  test_random();
 //  test_view();
-  test_mean();
+//  test_mean();
 //  test_embedding();
+//  test_embedding_indices();
+//  test_tensor_ref();
+//  test_adj_dataset();
+  // test_node_features();
+//  test_tensor_assign();
+//  test_tensor_get();
+//  test_unorderred_map();
+//  test_tensor_indices();
+//  test_tensor_copy();
+//  test_tensor_allocate();
+  test_cross_entropy_loss();
   return 0;
 }
 

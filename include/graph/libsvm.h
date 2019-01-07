@@ -8,7 +8,7 @@
 #include <fstream>
 
 #include <torch/torch.h>
-#include "graph/utils.h"
+#include "graph/dataset.h"
 
 struct LibsvmDataset : torch::data::datasets::Dataset<LibsvmDataset> {
 
@@ -16,7 +16,7 @@ struct LibsvmDataset : torch::data::datasets::Dataset<LibsvmDataset> {
     std::ifstream in(path);
     std::string line;
     while (std::getline(in, line)) {
-      auto example = graph::utils::parseLibSVM(line);
+      auto example = graph::dataset::parseLibSVM(line);
       examples.push_back(example);
     }
 
