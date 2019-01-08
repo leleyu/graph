@@ -10,6 +10,8 @@
 #include <vector>
 #include <iostream>
 #include <unordered_map>
+#include <chrono>
+#include <ctime>
 
 using namespace torch::data;
 using namespace torch;
@@ -96,8 +98,12 @@ void test_cat_tensors() {
   }
   std::cout << torch::cat(list, 1) << std::endl;
 
-  torch::TensorList list2({torch::zeros({1, 10}), torch::ones({1, 10})});
-  std::cout << torch::cat(list2, 1) << std::endl;
+  tensors.clear();
+  tensors.push_back(torch::ones(5).view({1, 5}));
+  tensors.push_back(torch::ones(5).view({1, 5}));
+
+  torch::TensorList list1(tensors.data(), tensors.size());
+  std::cout << torch::cat(list1, 0) << std::endl;
 }
 
 void test_sparse_tensor() {
@@ -194,15 +200,28 @@ void test_view() {
 
 void test_mean() {
   auto a = torch::ones({2, 10});
-  auto b = a.mean({1});
-  auto c = a.sum({1});
+  auto b = a.mean(1);
+  auto c = a.sum(1);
   std::cout << b << std::endl;
   std::cout << c << std::endl;
 
-  auto d = torch::ones({3, 2, 10});
-  auto e = d.mean(1);
-  std::cout << d << std::endl;
-  std::cout << e << std::endl;
+//  auto d = torch::ones({3, 2, 10});
+//  auto e = d.mean(1);
+//  std::cout << d << std::endl;
+//  std::cout << e << std::endl;
+}
+
+void test_mean_manually() {
+  auto a = torch::ones({10});
+  auto b = torch::ones({10});
+
+  std::cout << a << std::endl;
+  std::cout << b << std::endl;
+
+  a.add_(b);
+
+  std::cout << a << std::endl;
+
 }
 
 void test_embedding() {
@@ -397,6 +416,41 @@ void test_tensor_reshape() {
   std::cout << t << std::endl;
 }
 
+void test_accessor() {
+  auto t = torch::randn({2, 3});
+  auto f = t.accessor<float, 2>();
+
+  for (int i = 0; i < t.size(0); i ++)
+    for (int j = 0; j < t.size(1); j ++)
+      std::cout << f[i][j] << std::endl;
+}
+
+void test_from_blob() {
+  std::vector<float> data = {1.0, 2.0, 3.0};
+  auto t = torch::from_blob(data.data(), {3});
+  auto f = t.accessor<float, 1>();
+  for (int i = 0; i < t.size(0); i ++)
+    std::cout << f[i] << std::endl;
+}
+
+void test_now() {
+  auto start = std::chrono::system_clock::now();
+  for (int i = 0; i < 10000000; i ++);
+
+  auto end = std::chrono::system_clock::now();
+
+  std::chrono::duration<double> elapsed_seconds = end-start;
+  std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+
+  std::cout << "finished computation at " << std::ctime(&end_time)
+            << "elapsed time: " << elapsed_seconds.count() << "s\n";
+}
+
+void test_empty_tensor() {
+  auto empty = torch::empty({3, 5});
+  std::cout << empty << std::endl;
+}
+
 
 int main() {
 //  DummyDataset d;
@@ -406,7 +460,7 @@ int main() {
 
 //  tensor_dense_test();
 //  test_sampler();
-// test_cat_tensors();
+//  test_cat_tensors();
 //  test_sparse_tensor();
 //  test_loader();
 //  test_mm();
@@ -415,6 +469,8 @@ int main() {
 //  test_random();
 //  test_view();
 //  test_mean();
+  test_mean_manually();
+
 //  test_embedding();
 //  test_embedding_indices();
 //  test_tensor_ref();
@@ -427,7 +483,11 @@ int main() {
 //  test_tensor_copy();
 //  test_tensor_allocate();
 //  test_cross_entropy_loss();
-  test_tensor_reshape();
+//  test_tensor_reshape();
+//  test_accessor();
+//  test_from_blob();
+//  test_now();
+//  test_empty_tensor();
   return 0;
 }
 

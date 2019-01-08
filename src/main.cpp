@@ -45,7 +45,7 @@ void train_lr(const std::string& input, size_t n_dim, size_t batch_size) {
 }
 
 void train_graphsage(const std::string& edge_path, const std::string& node_path,
-  int n_feature, int n_node, int n_class, int n_hidden, int batch_size = 126) {
+  int n_feature, int n_node, int n_class, int n_hidden, int batch_size = 128) {
   using namespace graph::dataset;
   using namespace graph::nn;
   using namespace torch::optim;
@@ -59,15 +59,12 @@ void train_graphsage(const std::string& edge_path, const std::string& node_path,
   auto sampler = samplers::RandomSampler(dataset.size().value());
   auto loader  = make_data_loader(dataset, options, sampler);
 
-
   AdjList adj;
   load_edges(edge_path, &adj);
-
   Nodes nodes;
   load_features(node_path, &nodes, n_feature, n_node);
 
   SupervisedGraphsage net(n_class, n_feature, n_hidden);
-
   SGD optim(net.parameters(), 0.05);
 
   auto n = torch::empty({batch_size}, TensorOptions().dtype(kInt32));
@@ -76,15 +73,16 @@ void train_graphsage(const std::string& edge_path, const std::string& node_path,
   for (int epoch = 1; epoch < 10; epoch ++) {
     auto loss_sum = 0.0;
     int cnt = 0;
-    for (auto batch: *loader) {
-      batch_size = batch.size();
-      
-      if (batch_size != n.size(0)) {
-        n.resize_({batch_size});
-        l.resize_({batch_size});
-      }
+    auto start = std::chrono::system_clock::now();
 
+    for (auto batch: *loader) {
+      // If this batch is not enough data, pass it.
+      if (batch.size() != batch_size)
+        continue;
+
+      // copy nodes data
       memcpy(n.data_ptr(), batch.data(), batch_size*sizeof(int));
+      // copy labels
       for (int i = 0; i < batch_size; i ++) {
         int index = nodes.node_to_index.find(batch[i])->second;
         l[i] = nodes.labels[index].item().toLong();
@@ -98,7 +96,10 @@ void train_graphsage(const std::string& edge_path, const std::string& node_path,
       cnt += batch_size;
     }
 
-    std::cout << loss_sum / cnt << std::endl;
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> cost = end - start;
+
+    std::cout << "loss=" << loss_sum / cnt << " time=" << cost.count() << "s" << std::endl;
   }
 }
 

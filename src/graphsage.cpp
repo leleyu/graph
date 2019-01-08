@@ -16,8 +16,9 @@ torch::Tensor SupervisedGraphsage::include_neibours(const torch::Tensor &nodes,
 
   std::set<int> neibours;
   int n_nodes = static_cast<int>(nodes.size(0));
+  auto accessor = nodes.accessor<int, 1>();
   for (int i = 0; i < n_nodes; i++) {
-    int node = nodes[i].item().toInt();
+    int node = accessor[i];
     neibours.insert(node);
 
     auto it = adj.src_to_index.find(node);
@@ -29,7 +30,7 @@ torch::Tensor SupervisedGraphsage::include_neibours(const torch::Tensor &nodes,
     }
   }
 
-  auto tensor = torch::empty({static_cast<int>(neibours.size())});
+  auto tensor = torch::empty({static_cast<int>(neibours.size())}, torch::TensorOptions().dtype(torch::kInt32));
   int idx = 0;
   for (auto n : neibours) tensor[idx++] = n;
   return tensor;
@@ -44,17 +45,13 @@ torch::Tensor SupervisedGraphsage::forward(const torch::Tensor &nodes,
 
   std::unordered_map<int, int> index1;
   int64_t n_first = first.size(0);
+  auto accessor = first.accessor<int, 1>();
   for (int i = 0; i < n_first; i ++)
-    index1[first[i].item().toInt()] = i;
+    index1[accessor[i]] = i;
 
   auto h1 = layer1->forward(first, features, node_to_index, adj);
 
-//  std::cout << "h1.dim()=" << h1.dim() << " h1.shape()=" << h1.size(0) << "," << h1.size(1) << std::endl;
-
   auto h2 = layer2->forward(nodes, h1, index1, adj);
-
-//  std::cout << "h2.dim()=" << h2.dim() << " h2.shape()=" << h2.size(0) << "," << h2.size(1) << std::endl;
-
 
   return torch::relu(h2.mm(weight));
 }

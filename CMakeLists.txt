@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project(graph)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -10,7 +10,6 @@ include_directories("include/")
 
 set(HEADER include/graph/dataset.h
         include/graph/model.h
-        include/graph/dataset.h
         include/graph/mean.h
         include/graph/graphsage.h)
 

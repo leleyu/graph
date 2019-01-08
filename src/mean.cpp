@@ -19,23 +19,21 @@ torch::Tensor MeanImpl::forward(const torch::Tensor& nodes,
 
   // neibour_features is [n_node, n_feature]
   auto neibour_features = aggregate(nodes, features, node_to_index, adj);
-
-//  std::cout << "neibour_features dim=" << neibour_features.dim() << " shape=" << neibour_features.size(0) << ","
-//    << neibour_features.size(1) << std::endl;
   
   int n_nodes = static_cast<int>(nodes.size(0));
+  auto accessor = nodes.accessor<int, 1>();
 
   // self is [n_node, n_feature]
-  auto self = torch::zeros({n_nodes, options.in_});
+  std::vector<torch::Tensor> selfs;
   for (int i = 0; i < n_nodes; i ++) {
-    int node = nodes[i].item().toInt();
+    int node = accessor[i];
     int index = node_to_index.find(node)->second;
-    self[i] = features[index];
+    selfs.push_back(features[index].view({1, options.in_}));
   }
 
-//  std::cout << "self dim=" << self.dim() << " shape=" << self.size(0) << "," << self.size(1) << std::endl;
+  torch::TensorList self_lists(selfs.data(), selfs.size());
+  auto self = torch::cat(self_lists, 0);
 
-  // torch::TensorList list({self, neibour_features});
   std::vector<torch::Tensor> tensors;
   tensors.push_back(self);
   tensors.push_back(neibour_features);
@@ -43,8 +41,6 @@ torch::Tensor MeanImpl::forward(const torch::Tensor& nodes,
 
   // combined is [n_node, n_feature * 2]
   auto combined = torch::cat(list, 1);
-
-//  std::cout << "combine dim=" << combined.dim() << " shape=" << combined.size(0) << "," << combined.size(1) << std::endl;
 
   // output [n_node, output_dim]
   return relu(combined.mm(weight));
@@ -55,30 +51,38 @@ torch::Tensor MeanImpl::aggregate(const torch::Tensor &nodes,
   const std::unordered_map<int, int> &node_to_index,
   const graph::dataset::AdjList &adj) {
 
-//  std::cout << "aggregate" << std::endl;
-
   assert(nodes.dim() == 1);
   int64_t num_nodes = nodes.size(0);
+  auto accessor = nodes.accessor<int, 1>();
+
   // aggregate and calculate the mean value of neibours
-  auto neibours = torch::zeros({num_nodes, options.in_});
+
+  std::vector<torch::Tensor> means;
 
   for (int i = 0; i < num_nodes; i ++) {
-    int node = nodes[i].item().toInt();
+    int node = accessor[i];
     auto it = adj.src_to_index.find(node);
+    auto nb = torch::zeros({options.in_});
+
     if (it != adj.src_to_index.end()) {
+
       int index = it->second;
       int num_neibours = adj.starts[index+1] - adj.starts[index];
-      auto indices = torch::zeros({num_neibours}, torch::TensorOptions().dtype(torch::kInt64));
-      auto neibour_features = torch::zeros({num_neibours, options.in_});
+
       for (int j = 0; j < num_neibours; j ++) {
         int n = adj.dsts[adj.starts[index] + j];
         int idx = node_to_index.find(n)->second;
-        neibour_features[j] = features[idx];
+        nb.add_(features[idx]);
       }
-      neibours[i] = neibour_features.mean();
+
+      nb.div_(num_neibours);
     }
+
+    means.push_back(nb.view({1, options.in_}));
   }
-  return neibours;
+
+  torch::TensorList list(means.data(), means.size());
+  return torch::cat(list, 0);
 }
 
 void MeanImpl::reset() {
