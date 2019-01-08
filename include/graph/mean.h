@@ -39,7 +39,7 @@ public:
     const std::unordered_map<int, int>& node_to_index,
     const graph::dataset::AdjList& adj);
 
-  void reset();
+  void reset() override;
 
   /// The learned weight
   torch::Tensor weight;

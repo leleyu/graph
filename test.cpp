@@ -389,6 +389,13 @@ void test_cross_entropy_loss() {
   std::cout << output << std::endl;
 }
 
+void test_tensor_reshape() {
+  auto t = torch::ones({10});
+  std::cout << t << std::endl;
+  std::cout << t.resize_({5}) << std::endl;
+  t.reset();
+  std::cout << t << std::endl;
+}
 
 
 int main() {
@@ -419,7 +426,8 @@ int main() {
 //  test_tensor_indices();
 //  test_tensor_copy();
 //  test_tensor_allocate();
-  test_cross_entropy_loss();
+//  test_cross_entropy_loss();
+  test_tensor_reshape();
   return 0;
 }
 

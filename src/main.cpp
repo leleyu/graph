@@ -1,7 +1,6 @@
 #include <iostream>
 #include "torch/torch.h"
 #include <graph/dataset.h>
-#include <graph/libsvm.h>
 #include <graph/model.h>
 #include <graph/dataset.h>
 #include <graph/graphsage.h>
@@ -10,7 +9,7 @@
 
 void train_lr(const std::string& input, size_t n_dim, size_t batch_size) {
 
-  auto dataset = LibsvmDataset(input, n_dim);
+  auto dataset = graph::dataset::LibsvmDataset(input, n_dim);
   auto options = torch::data::DataLoaderOptions(batch_size);
   auto samplers = torch::data::samplers::SequentialSampler(dataset.size().value());
   auto data_loader = torch::data::make_data_loader(dataset, options, samplers);
@@ -46,10 +45,20 @@ void train_lr(const std::string& input, size_t n_dim, size_t batch_size) {
 }
 
 void train_graphsage(const std::string& edge_path, const std::string& node_path,
-  int n_feature, int n_node, int n_class, int n_hidden) {
+  int n_feature, int n_node, int n_class, int n_hidden, int batch_size = 126) {
   using namespace graph::dataset;
   using namespace graph::nn;
   using namespace torch::optim;
+  using namespace torch::data;
+
+  std::vector<int> node_ids;
+  node_ids.resize(n_node);
+  for (int i = 0; i < n_node; i++) node_ids[i] = i;
+  auto dataset = NodeDataset(node_ids);
+  auto options = DataLoaderOptions(batch_size);
+  auto sampler = samplers::RandomSampler(dataset.size().value());
+  auto loader  = make_data_loader(dataset, options, sampler);
+
 
   AdjList adj;
   load_edges(edge_path, &adj);
@@ -59,38 +68,38 @@ void train_graphsage(const std::string& edge_path, const std::string& node_path,
 
   SupervisedGraphsage net(n_class, n_feature, n_hidden);
 
-  Adam optim(net.parameters(), 0.0001);
+  SGD optim(net.parameters(), 0.05);
 
-  for (int epoch = 1; epoch <= 10; epoch ++) {
-    auto n = torch::empty({1}, TensorOptions().dtype(kInt32));
-    auto l = torch::empty({1}, TensorOptions().dtype(kInt64));
-    for (int node = 0; node < n_node; node ++) {
+  auto n = torch::empty({batch_size}, TensorOptions().dtype(kInt32));
+  auto l = torch::empty({batch_size}, TensorOptions().dtype(kInt64));
 
-      optim.zero_grad();
-      n[0] = node;
-
-      int index = nodes.node_to_index.find(node)->second;
-
-      l[0] = nodes.labels[index].item().toLong();
-      std::cout << "node=" << node << std::endl;
-
-      auto it = adj.src_to_index.find(node);
-      if (it != adj.src_to_index.end()) {
-        std::cout << "node=" << node << std::endl;
-        auto output = net.forward(n, nodes.features, nodes.node_to_index, adj);
-        auto loss = nll_loss(log_softmax(output, 1), l);
-        std::cout << output << std::endl;
-        std::cout << loss.item() << std::endl;
-        loss.backward();
-        optim.step();
-
+  for (int epoch = 1; epoch < 10; epoch ++) {
+    auto loss_sum = 0.0;
+    int cnt = 0;
+    for (auto batch: *loader) {
+      batch_size = batch.size();
+      
+      if (batch_size != n.size(0)) {
+        n.resize_({batch_size});
+        l.resize_({batch_size});
       }
-     
+
+      memcpy(n.data_ptr(), batch.data(), batch_size*sizeof(int));
+      for (int i = 0; i < batch_size; i ++) {
+        int index = nodes.node_to_index.find(batch[i])->second;
+        l[i] = nodes.labels[index].item().toLong();
+      }
+
+      auto output = net.forward(n, nodes.features, nodes.node_to_index, adj);
+      auto loss = nll_loss(log_softmax(output, 1), l);
+      loss.backward();
+      optim.step();
+      loss_sum += loss.item().toDouble() * batch_size;
+      cnt += batch_size;
     }
+
+    std::cout << loss_sum / cnt << std::endl;
   }
-
-
-
 }
 
 void run_lr() {

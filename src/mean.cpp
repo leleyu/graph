@@ -20,8 +20,8 @@ torch::Tensor MeanImpl::forward(const torch::Tensor& nodes,
   // neibour_features is [n_node, n_feature]
   auto neibour_features = aggregate(nodes, features, node_to_index, adj);
 
-  std::cout << "neibour_features dim=" << neibour_features.dim() << " shape=" << neibour_features.size(0) << "," 
-    << neibour_features.size(1) << std::endl;
+//  std::cout << "neibour_features dim=" << neibour_features.dim() << " shape=" << neibour_features.size(0) << ","
+//    << neibour_features.size(1) << std::endl;
   
   int n_nodes = static_cast<int>(nodes.size(0));
 
@@ -33,7 +33,7 @@ torch::Tensor MeanImpl::forward(const torch::Tensor& nodes,
     self[i] = features[index];
   }
 
-  std::cout << "self dim=" << self.dim() << " shape=" << self.size(0) << "," << self.size(1) << std::endl;
+//  std::cout << "self dim=" << self.dim() << " shape=" << self.size(0) << "," << self.size(1) << std::endl;
 
   // torch::TensorList list({self, neibour_features});
   std::vector<torch::Tensor> tensors;
@@ -44,7 +44,7 @@ torch::Tensor MeanImpl::forward(const torch::Tensor& nodes,
   // combined is [n_node, n_feature * 2]
   auto combined = torch::cat(list, 1);
 
-  std::cout << "combine dim=" << combined.dim() << " shape=" << combined.size(0) << "," << combined.size(1) << std::endl;
+//  std::cout << "combine dim=" << combined.dim() << " shape=" << combined.size(0) << "," << combined.size(1) << std::endl;
 
   // output [n_node, output_dim]
   return relu(combined.mm(weight));
@@ -55,7 +55,7 @@ torch::Tensor MeanImpl::aggregate(const torch::Tensor &nodes,
   const std::unordered_map<int, int> &node_to_index,
   const graph::dataset::AdjList &adj) {
 
-  std::cout << "aggregate" << std::endl;
+//  std::cout << "aggregate" << std::endl;
 
   assert(nodes.dim() == 1);
   int64_t num_nodes = nodes.size(0);

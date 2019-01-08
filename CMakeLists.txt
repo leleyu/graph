@@ -9,7 +9,6 @@ find_package(Torch REQUIRED)
 include_directories("include/")
 
 set(HEADER include/graph/dataset.h
-        include/graph/libsvm.h
         include/graph/model.h
         include/graph/dataset.h
         include/graph/mean.h
