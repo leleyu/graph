@@ -39,17 +39,18 @@ private:
 };
 
 struct NodeDataset: torch::data::datasets::Dataset<NodeDataset, int> {
-  explicit NodeDataset(const std::vector<int>& nodes): nodes(nodes) {}
+  explicit NodeDataset(const std::vector<int>& nodes, size_t size): nodes(nodes), num(size) {}
 
   int get(size_t index) override {
     return nodes[index];
   }
 
   torch::optional<size_t> size() const override {
-    return nodes.size();
+    return num;
   }
 
   const std::vector<int>& nodes;
+  size_t num;
 };
 
 struct AdjList {

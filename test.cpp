@@ -451,7 +451,29 @@ void test_empty_tensor() {
   std::cout << empty << std::endl;
 }
 
+void test_max_at() {
+  auto a = torch::rand({3, 10});
+  auto b = a.argmax(1);
+  std::cout << a << std::endl;
+  std::cout << b << std::endl;
+}
 
+void test_equal() {
+  auto a = torch::ones({10});
+  auto b = torch::ones({10});
+  auto c = torch::eq(a, b);
+  std::cout << c << std::endl;
+}
+
+void test_random_shuffle() {
+  std::vector<int> data;
+  data.resize(10);
+  for (int i = 0; i < 10; i ++) data[i] = i;
+
+  std::random_shuffle(data.begin(), data.end());
+
+  std::cout << data << std::endl;
+}
 int main() {
 //  DummyDataset d;
 //  std::vector<int> batch = d.get_batch({0, 1, 2, 3, 4});
@@ -469,7 +491,7 @@ int main() {
 //  test_random();
 //  test_view();
 //  test_mean();
-  test_mean_manually();
+//  test_mean_manually();
 
 //  test_embedding();
 //  test_embedding_indices();
@@ -488,6 +510,9 @@ int main() {
 //  test_from_blob();
 //  test_now();
 //  test_empty_tensor();
+//  test_max_at();
+//  test_equal();
+  test_random_shuffle();
   return 0;
 }
 
