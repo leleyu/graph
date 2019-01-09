@@ -474,6 +474,23 @@ void test_random_shuffle() {
 
   std::cout << data << std::endl;
 }
+
+void test_sigmoid_cross_entry_loss() {
+  
+//  auto x = torch::zeros({2});
+//  x[0] = 0.1;
+//  x[1] = 0.99;
+  
+  
+  auto x = torch::randn({10});
+  auto y = torch::ones({10});
+  torch::Tensor undefined;
+  std::cout << torch::binary_cross_entropy_with_logits(x, y, undefined, undefined, 1) << std::endl;
+  
+  std::cout << torch::log(torch::zeros({1})) << std::endl;
+}
+
+
 int main() {
 //  DummyDataset d;
 //  std::vector<int> batch = d.get_batch({0, 1, 2, 3, 4});
@@ -512,7 +529,8 @@ int main() {
 //  test_empty_tensor();
 //  test_max_at();
 //  test_equal();
-  test_random_shuffle();
+//  test_random_shuffle();
+  test_sigmoid_cross_entry_loss();
   return 0;
 }
 
