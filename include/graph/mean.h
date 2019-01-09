@@ -2,8 +2,8 @@
 // Created by leleyu on 2019-01-07.
 //
 
-#ifndef TEST_MEAN_H
-#define TEST_MEAN_H
+#ifndef GRAPH_MEAN_H
+#define GRAPH_MEAN_H
 
 #include <torch/nn/cloneable.h>
 #include <torch/nn/module.h>
@@ -21,27 +21,33 @@ struct MeanOptions {
 
   TORCH_ARG(int, out);
 };
+
+using namespace torch;
+using namespace torch::nn;
+using namespace graph::dataset;
+
 /// Mean aggregator for neibours
-class MeanImpl : public torch::nn::Cloneable<MeanImpl> {
+class MeanImpl : public Cloneable<MeanImpl> {
 public:
   MeanImpl(int in, int out): MeanImpl(MeanOptions(in, out)) {}
   explicit MeanImpl(MeanOptions options);
 
   /// Aggregate and calculate the mean of  features of neibours.
   /// Then, multiplying the mean with `weight` and a `relu` activation
-  torch::Tensor forward(const torch::Tensor& nodes,
-    const torch::Tensor& features,
+  Tensor forward(const Tensor& nodes,
+    const Tensor& features,
     const std::unordered_map<int, int>& node_to_index,
-    const graph::dataset::AdjList& adj);
+    const AdjList& adj);
 
-  torch::Tensor aggregate(const torch::Tensor& nodes,
-    const torch::Tensor& features,
+  /// Aggregate the features of neibours without sampling
+  Tensor aggregate(const Tensor& nodes,
+    const Tensor& features,
     const std::unordered_map<int, int>& node_to_index,
-    const graph::dataset::AdjList& adj);
+    const AdjList& adj);
 
   void reset() override;
 
-  /// The learned weight
+  /// The learned weight with dim [in, out]
   torch::Tensor weight;
 
   MeanOptions options;
@@ -52,4 +58,4 @@ TORCH_MODULE(Mean);
 } // namespace nn
 } // namespace graph
 
-#endif //TEST_MEAN_H
+#endif //GRAPH_MEAN_H

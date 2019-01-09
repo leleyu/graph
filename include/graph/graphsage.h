@@ -2,8 +2,8 @@
 // Created by leleyu on 2019-01-07.
 //
 
-#ifndef TEST_GRAPHSAGE_H
-#define TEST_GRAPHSAGE_H
+#ifndef GRAPH_GRAPHSAGE_H
+#define GRAPH_GRAPHSAGE_H
 
 #include <graph/mean.h>
 
@@ -11,24 +11,34 @@
 namespace graph {
 namespace nn {
 
-struct SupervisedGraphsage: torch::nn::Module {
+using namespace torch::nn;
+using namespace torch;
+using namespace graph::dataset;
+
+/// Supervised GraphSage Model
+struct SupervisedGraphsage: Module {
 
   explicit SupervisedGraphsage(int n_class, int n_feature, int hidden_dim);
 
-  torch::Tensor forward(const torch::Tensor& nodes,
-    const torch::Tensor& features,
+  Tensor forward(const Tensor& nodes,
+    const Tensor& features,
     const std::unordered_map<int, int>& node_to_index,
-    const graph::dataset::AdjList& adj);
+    const AdjList& adj);
 
-  torch::Tensor include_neibours(const torch::Tensor& nodes,
-    const graph::dataset::AdjList& adj);
+  Tensor include_neibours(const Tensor& nodes,
+    const AdjList& adj);
 
-  torch::Tensor weight;
+  // The learned weight with dim [hidden_dim, n_class]
+  Tensor weight;
+
+  // number of input features
   int n_feature;
+
+  // Two layers with mean aggregate
   graph::nn::Mean layer1{nullptr};
   graph::nn::Mean layer2{nullptr};
 };
 } // namespace nn
 } // namespace graph
 
-#endif //TEST_GRAPHSAGE_H
+#endif //GRAPH_GRAPHSAGE_H
