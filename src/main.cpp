@@ -79,6 +79,7 @@ void train_graphsage(const std::string& edge_path, const std::string& node_path,
   load_features(node_path, &nodes, n_feature, n_node);
 
   SupervisedGraphsage net(n_class, n_feature, n_hidden);
+
   SGD optim(net.parameters(), 0.02);
 
   auto n = torch::empty({batch_size}, TensorOptions().dtype(kInt32));

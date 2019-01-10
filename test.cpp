@@ -301,20 +301,8 @@ void test_node_features() {
 
 void test_tensor_assign() {
   auto a = torch::zeros({3, 5});
-  a[0][0] = 1;
-
-  std::vector<float> data = {0, 1, 2, 3, 4};
-  data.resize(5);
-  std::cout << data << std::endl;
-//  memcpy(a.data_ptr(), static_cast<void*>(data.data()), 5);
-
-  float* ptr = static_cast<float*>(a.data_ptr());
-
-  memcpy(static_cast<void*>(ptr + 5), static_cast<void*>(data.data()), 5*sizeof(float));
-//  ptr[0] = 0.1;
-  std::cout << a << std::endl;
-
-  a[2] = torch::ones({5});
+  auto f = a.accessor<float, 2>();
+  f[0][0] = 0.1f;
   std::cout << a << std::endl;
 }
 
@@ -490,6 +478,100 @@ void test_sigmoid_cross_entry_loss() {
   std::cout << torch::log(torch::zeros({1})) << std::endl;
 }
 
+void test_loss_equal() {
+  auto zu = torch::randn({10});
+  auto zv = torch::randn({10});
+
+  auto x = torch::randn({5});
+
+  std::cout << - torch::log(1 - torch::sigmoid(x)) << std::endl;
+
+  std::cout << - torch::log(torch::sigmoid(-x)) << std::endl;
+}
+
+void test_normalizae() {
+  auto t = torch::ones({2, 10});
+  auto norm = t.norm(2, 1);
+  std::cout << norm << std::endl;
+
+  t = t.div_(t.norm(2, 1).clamp_min(10e-12).view({2, 1}));
+  std::cout << t << std::endl;
+}
+
+void test_transpose() {
+  auto a = torch::ones({10, 20, 3});
+  auto b = torch::ones({10, 3});
+//  std::cout << a.transpose(1, 2) << std::endl;
+  std::cout << a.matmul(b.view({10, 3, 1})) << std::endl;
+}
+
+void test_random_generator() {
+  srand(time(NULL));
+  int random_number = rand();
+  std::cout << random_number << std::endl;
+}
+
+
+//TODO: Add gtest
+void test_random_walk() {
+  using namespace graph::dataset;
+  using namespace torch;
+
+  AdjList adj;
+  std::string edge_path = "../data/cora/cora.adjs";
+  load_edges(edge_path, &adj);
+  auto walks = random_walk(adj, 2, 5);
+
+  auto first = walks[0];
+  std::cout << first << std::endl;
+  std::cout << walks[1] << std::endl;
+
+}
+
+
+void test_negative_sampling() {
+  using namespace graph::dataset;
+  using namespace torch;
+
+  auto nodes = torch::ones({10}, TensorOptions().dtype(kInt32));
+  auto f = nodes.accessor<int, 1>();
+  for (int i = 0; i < 10; i++) f[i] = i;
+  auto negs = negative_sampling(nodes, 3, 100000);
+  std::cout << negs[0] << std::endl;
+  std::cout << negs[1] << std::endl;
+}
+
+void test_tensor_dataset() {
+  auto x = torch::ones({10, 10});
+  for (int i = 0; i < 10; i ++) x[i] = i;
+
+  auto dataset = torch::data::datasets::TensorDataset(x);
+  auto sampler = torch::data::samplers::RandomSampler(dataset.size().value());
+  auto option  = torch::data::DataLoaderOptions(2);
+
+  auto loader  = torch::data::make_data_loader(dataset, option, sampler);
+
+  for (auto batch : *loader) {
+    std::cout << batch << std::endl;
+    std::cin.get();
+  }
+}
+
+void test_edge_dataset() {
+  std::vector<int> srcs = {0, 1, 2, 3, 4};
+  std::vector<int> dsts = {2, 3, 4, 5, 6};
+
+  auto dataset = graph::dataset::EdgeDataset(srcs, dsts);
+  auto sampler = torch::data::samplers::RandomSampler(dataset.size().value());
+  auto option  = torch::data::DataLoaderOptions(2);
+  auto loader  = torch::data::make_data_loader(dataset, option, sampler);
+
+  for (auto batch : *loader) {
+    std::cout << batch[0] << std::endl;
+    std::cin.get();
+  }
+
+}
 
 int main() {
 //  DummyDataset d;
@@ -530,7 +612,15 @@ int main() {
 //  test_max_at();
 //  test_equal();
 //  test_random_shuffle();
-  test_sigmoid_cross_entry_loss();
+//  test_sigmoid_cross_entry_loss();
+//  test_loss_equal();
+//  test_normalizae();
+//  test_transpose();
+//  test_random_generator();
+//  test_random_walk();
+//  test_negative_sampling();
+//  test_tensor_dataset();
+  test_edge_dataset();
   return 0;
 }
 

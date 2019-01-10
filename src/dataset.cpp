@@ -103,6 +103,28 @@ void load_edges(const std::string& path, AdjList* adj) {
   }
 }
 
+void load_edges(const std::string& path, Edges* edges) {
+  std::ifstream in(path);
+  std::string line, c;
+
+  std::vector<int>& srcs = edges->srcs;
+  std::vector<int>& dsts = edges->dsts;
+
+  while (getline(in, line)) {
+    std::istringstream is(line);
+
+    // src_id
+    getline(is, c, ' ');
+    auto src_id = std::stoi(c);
+
+    while (getline(is, c, ' ')) {
+      auto dst_id = std::stoi(c);
+      srcs.push_back(src_id);
+      dsts.push_back(dst_id);
+    }
+  }
+}
+
 void load_features(const std::string& path, Nodes* nodes,
   int n_feature, int n_node) {
   std::ifstream in(path);
@@ -133,6 +155,68 @@ void load_features(const std::string& path, Nodes* nodes,
   }
 }
 
+// Generate random walk with Adj, for each node, we generate `n_walks` walks
+// with each walk of `n_length`. The generated walks is stored in a tensor with
+// dim [n_walks*n_nodes, n_length]
+torch::Tensor random_walk(const AdjList& adj, int n_walks, int n_length) {
+
+  int n_nodes = adj.src_to_index.size();
+  auto walks = torch::zeros({n_nodes*n_walks, n_length}, torch::TensorOptions().dtype(torch::kInt32));
+  int walk_idx = 0;
+  srand(time(NULL));
+
+  for (auto it = adj.src_to_index.begin(); it != adj.src_to_index.end(); it ++) {
+    int node = it->first;
+
+    for (int i = 0; i < n_walks; i ++) {
+      walks[walk_idx] = -1;
+      auto current_walk = walks[walk_idx];
+      auto accessor = current_walk.accessor<int, 1>();
+      int current = node;
+      for (int j = 0; j < n_length; j++) {
+        accessor[j] = current;
+        // last one
+        if (j == n_length - 1)
+          continue;
+        // find next one
+        auto n_it = adj.src_to_index.find(current);
+        if (n_it != adj.src_to_index.end()) {
+          int index = n_it->second;
+          int n_nb = adj.starts[index + 1] - adj.starts[index];
+          int next = rand() % n_nb;
+          current = adj.dsts[adj.starts[index] + next];
+        } else
+          break;
+      }
+      walk_idx++;
+    }
+  }
+
+  return walks;
+}
+
+// Generate negative sampling for nodes in `nodes`, for each node, we generate
+// `n_neg` negative samples that are not similar with this node.
+// The return tensor contains size(nodes)*n_neg negatives samples.
+torch::Tensor negative_sampling(const torch::Tensor& nodes, int n_neg, int n_nodes) {
+  auto negs = torch::zeros({nodes.size(0), n_neg}, torch::TensorOptions().dtype(torch::kInt32));
+  auto accessor = nodes.accessor<int, 1>();
+  srand(time(NULL));
+  for (int i = 0; i < nodes.size(0); i ++) {
+    int node = accessor[i];
+    auto current_neg = negs[i];
+    auto f = current_neg.accessor<int, 1>();
+    for (int j = 0; j < n_neg; j ++) {
+      int n;
+      do {
+        n = rand() % n_nodes;
+      } while (n == node);
+      f[j] = n;
+    }
+  }
+
+  return negs;
+}
 
 } //namespace dataset
 } //graph

@@ -7,16 +7,13 @@ using namespace torch;
 using namespace torch::nn;
 using namespace graph::dataset;
 
-SupervisedGraphsage::SupervisedGraphsage(int n_class, int n_feature, int hidden_dim) {
-  weight = register_parameter("weight", torch::rand({hidden_dim, n_class}));
+UnSupervisedGraphsage::UnSupervisedGraphsage(int n_feature, int hidden_dim) {
   layer1 = register_module("layer1", graph::nn::Mean(n_feature, hidden_dim));
   layer2 = register_module("layer2", graph::nn::Mean(hidden_dim, hidden_dim));
-
-  init::xavier_uniform_(weight);
 }
 
-Tensor SupervisedGraphsage::include_neibours(const Tensor& nodes,
-  const AdjList &adj) {
+Tensor UnSupervisedGraphsage::include_neibours(const Tensor& nodes,
+                                             const AdjList &adj) {
 
   std::set<int> neibours;
   int n_nodes = static_cast<int>(nodes.size(0));
@@ -40,10 +37,10 @@ Tensor SupervisedGraphsage::include_neibours(const Tensor& nodes,
   return tensor;
 }
 
-Tensor SupervisedGraphsage::forward(const Tensor& nodes,
-  const Tensor& features,
-  const std::unordered_map<int, int>& node_to_index,
-  const AdjList& adj) {
+Tensor UnSupervisedGraphsage::forward(const Tensor& nodes,
+                                    const Tensor& features,
+                                    const std::unordered_map<int, int>& node_to_index,
+                                    const AdjList& adj) {
 
   // Include neibours of first-order
   auto first = include_neibours(nodes, adj);
@@ -60,8 +57,30 @@ Tensor SupervisedGraphsage::forward(const Tensor& nodes,
   // h2 is [number_of_node, hidden_dim]
   auto h2 = layer2->forward(nodes, h1, index1, adj);
 
+  // do normalization
+  auto norm = h2.norm(2, 1).view({h2.size(0), 1});
+  h2 = h2.div(norm);
+
+  return h2;
+}
+
+
+SupervisedGraphsage::SupervisedGraphsage(int n_class, int n_feature, int hidden_dim):
+  UnSupervisedGraphsage(n_feature, hidden_dim) {
+  weight = register_parameter("weight", torch::rand({hidden_dim, n_class}));
+  init::xavier_uniform_(weight);
+}
+
+Tensor SupervisedGraphsage::forward(const Tensor& nodes,
+  const Tensor& features,
+  const std::unordered_map<int, int>& node_to_index,
+  const AdjList& adj) {
+
+  auto h2 = UnSupervisedGraphsage::forward(nodes, features, node_to_index, adj);
+
   // output is [number_of_node, n_class]
-  return relu(h2.mm(weight));
+  auto output =  relu(h2.mm(weight));
+  return output;
 }
 
 } // nn
