@@ -198,19 +198,32 @@ torch::Tensor random_walk(const AdjList& adj, int n_walks, int n_length) {
 // Generate negative sampling for nodes in `nodes`, for each node, we generate
 // `n_neg` negative samples that are not similar with this node.
 // The return tensor contains size(nodes)*n_neg negatives samples.
-torch::Tensor negative_sampling(const torch::Tensor& nodes, int n_neg, int n_nodes) {
+torch::Tensor negative_sampling(const AdjList& adj,
+    const torch::Tensor& nodes, int n_neg, int n_nodes) {
+  
   auto negs = torch::zeros({nodes.size(0), n_neg}, torch::TensorOptions().dtype(torch::kInt32));
   auto accessor = nodes.accessor<int, 1>();
   srand(time(NULL));
+  
+  std::set<int> nbs;
   for (int i = 0; i < nodes.size(0); i ++) {
     int node = accessor[i];
+    nbs.clear();
+    
+    auto it = adj.src_to_index.find(node);
+    if (it != adj.src_to_index.end()) {
+      int index = it->second;
+      for (int j = adj.starts[index]; j < adj.starts[index+1]; j ++)
+        nbs.insert(adj.dsts[j]);
+    }
+    
     auto current_neg = negs[i];
     auto f = current_neg.accessor<int, 1>();
     for (int j = 0; j < n_neg; j ++) {
       int n;
       do {
         n = rand() % n_nodes;
-      } while (n == node);
+      } while ((n == node) || (nbs.find(n) != nbs.end()));
       f[j] = n;
     }
   }

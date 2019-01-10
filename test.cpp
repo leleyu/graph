@@ -530,15 +530,7 @@ void test_random_walk() {
 
 
 void test_negative_sampling() {
-  using namespace graph::dataset;
-  using namespace torch;
-
-  auto nodes = torch::ones({10}, TensorOptions().dtype(kInt32));
-  auto f = nodes.accessor<int, 1>();
-  for (int i = 0; i < 10; i++) f[i] = i;
-  auto negs = negative_sampling(nodes, 3, 100000);
-  std::cout << negs[0] << std::endl;
-  std::cout << negs[1] << std::endl;
+  
 }
 
 void test_tensor_dataset() {
@@ -570,7 +562,16 @@ void test_edge_dataset() {
     std::cout << batch[0] << std::endl;
     std::cin.get();
   }
+}
 
+void test_matmul() {
+  auto x = torch::randn({3, 4});
+  auto y = torch::randn({3, 4});
+  
+  std::cout << x.view({3, 1, 4}).matmul(y.view({3, 4, 1})) << std::endl;
+  
+  for (int i = 0; i < 3; i ++)
+    std::cout << x[i].dot(y[i]) << std::endl;
 }
 
 int main() {
@@ -620,7 +621,8 @@ int main() {
 //  test_random_walk();
 //  test_negative_sampling();
 //  test_tensor_dataset();
-  test_edge_dataset();
+//  test_edge_dataset();
+  test_matmul();
   return 0;
 }
 

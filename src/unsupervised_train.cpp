@@ -20,7 +20,7 @@ void loss(Tensor u, Tensor v, Tensor neg) {
 
 void train_unsupervised_graphsage(const AdjList& adj,
     const Nodes& nodes, const Edges& edges,
-    int batch_size, int hidden_dim) {
+    int batch_size, int hidden_dim, int n_nodes) {
   auto dataset = EdgeDataset(edges.srcs, edges.dsts);
   auto sampler = RandomSampler(dataset.size().value());
   auto options = torch::data::DataLoaderOptions(batch_size);
@@ -28,7 +28,7 @@ void train_unsupervised_graphsage(const AdjList& adj,
 
   int n_feature = static_cast<int>(nodes.features.size(1));
   UnSupervisedGraphsage net(n_feature, hidden_dim);
-  SGD optim(net.parameters(), 0.01);
+  SGD optim(net.parameters(), 0.001);
 
 
   for (int epoch = 0; epoch < 10; epoch ++) {
@@ -39,10 +39,13 @@ void train_unsupervised_graphsage(const AdjList& adj,
       auto srcs = batch[0][0];
       auto dsts = batch[0][1];
 
+//      auto negs = negative_sampling(adj, srcs, 2, 2708);
+      
       int batch_size = srcs.size(0);
 
       auto src_output = net.forward(srcs, nodes.features, nodes.node_to_index, adj);
       auto dst_output = net.forward(dsts, nodes.features, nodes.node_to_index, adj);
+//      auto neg_output = net.forward(negs, nodes.features, nodes.node_to_index, adj);
 
 //      std::cout << src_output.sizes() << std::endl;
 //      std::cout << dst_output.sizes() << std::endl;
@@ -50,6 +53,7 @@ void train_unsupervised_graphsage(const AdjList& adj,
 
       auto dot = torch::matmul(src_output.view({batch_size, 1, hidden_dim,}),
           dst_output.view({batch_size, hidden_dim, 1})).squeeze();
+      std::cout << dot << std::endl;
 
 //      std::cout << dot.sizes() << std::endl;
 
@@ -73,5 +77,5 @@ int main() {
   load_edges(edge_path, &adj);
   load_edges(edge_path, &edges);
   load_features(node_path, &nodes, 1433, 2708);
-  train_unsupervised_graphsage(adj, nodes, edges, 128, 10);
+  train_unsupervised_graphsage(adj, nodes, edges, 128, 10, 2708);
 }

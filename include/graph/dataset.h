@@ -121,7 +121,8 @@ torch::Tensor random_walk(const AdjList& adj, int n_walks, int n_length);
 // Generate negative sampling for nodes in `nodes`, for each node, we generate
 // `n_neg` negative samples that are not similar with this node.
 // The return tensor contains size(nodes)*n_neg negatives samples.
-torch::Tensor negative_sampling(const torch::Tensor& nodes, int n_neg, int n_nodes);
+torch::Tensor negative_sampling(const AdjList& adj,
+  const torch::Tensor& nodes, int n_neg, int n_nodes);
 
 } // namespace dataset
 } // namespace graph

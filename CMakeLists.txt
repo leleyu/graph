@@ -15,7 +15,7 @@ set(HEADER include/graph/dataset.h
 
 set(SRC src/dataset.cpp src/mean.cpp src/graphsage.cpp)
 
-add_executable(supervised src/main.cpp ${HEADER} ${SRC})
+add_executable(supervised src/supervised.cpp ${HEADER} ${SRC})
 add_executable(test test.cpp ${HEADER} ${SRC})
 add_executable(unsupervised src/unsupervised_train.cpp ${HEADER} ${SRC})
 
