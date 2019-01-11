@@ -16,9 +16,11 @@ set(HEADER include/graph/dataset.h
 set(SRC src/dataset.cpp src/mean.cpp src/graphsage.cpp)
 
 add_executable(supervised src/supervised.cpp ${HEADER} ${SRC})
-add_executable(test test.cpp ${HEADER} ${SRC})
-add_executable(unsupervised src/unsupervised_train.cpp ${HEADER} ${SRC})
+add_executable(my_test src/test.cpp ${HEADER} ${SRC})
+add_executable(unsupervised src/unsupervised.cpp ${HEADER} ${SRC})
+add_executable(mlp src/mlp.cpp ${HEADER} ${SRC})
 
 target_link_libraries(supervised ${TORCH_LIBRARIES})
-target_link_libraries(test ${TORCH_LIBRARIES})
+target_link_libraries(my_test ${TORCH_LIBRARIES})
 target_link_libraries(unsupervised ${TORCH_LIBRARIES})
+target_link_libraries(mlp ${TORCH_LIBRARIES})

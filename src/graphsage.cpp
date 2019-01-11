@@ -58,7 +58,7 @@ Tensor UnSupervisedGraphsage::forward(const Tensor& nodes,
   auto h2 = layer2->forward(nodes, h1, index1, adj);
 
   // do normalization
-  auto norm = h2.norm(2, 1).view({h2.size(0), 1});
+  auto norm = h2.norm(2, 1).view({h2.size(0), 1}).clamp_min(10e-15);
   h2 = h2.div(norm);
 
   return h2;

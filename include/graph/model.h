@@ -10,27 +10,40 @@
 #include <graph/dataset.h>
 
 using namespace torch;
+using namespace torch::nn;
 
-struct LogisticRegression: nn::Module {
+struct TwoLayerMLP: Module {
 public:
-
-  explicit LogisticRegression(size_t n_dim) {
-    fc1 = register_module("fc1", nn::Linear(n_dim, 10));
-    fc2 = register_module("fc2", nn::Linear(10, 1));
-//    weight = register_parameter("weight", torch::rand({1, (int) n_dim}));
-//    bias = register_parameter("bias", torch::rand(1));
+  explicit TwoLayerMLP(size_t n_input, size_t n_hidden, size_t n_output) {
+    fc1 = register_module("fc1", nn::Linear(n_input, n_hidden));
+    fc2 = register_module("fc2", nn::Linear(n_hidden, n_output));
   }
 
   Tensor forward(Tensor x) {
-//    x = torch::sigmoid(torch::_sparse_mm(x, weight.t()));
     x = relu(fc1->forward(x));
-    x = sigmoid(fc2->forward(x));
+    x = fc2->forward(x);
     return x;
   }
 
 private:
   torch::nn::Linear fc1{nullptr};
   torch::nn::Linear fc2{nullptr};
+
+};
+
+struct LogisticRegression: Module {
+public:
+  explicit LogisticRegression(size_t n_input, size_t n_output) {
+    fc = register_module("fc1", nn::Linear(n_input, n_output));
+  }
+
+  Tensor forward(Tensor x) {
+    x = fc->forward(x);
+    return x;
+  }
+
+private:
+  torch::nn::Linear fc{nullptr};
 
 };
 
