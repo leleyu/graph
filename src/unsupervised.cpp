@@ -49,7 +49,7 @@ UnSupervisedGraphsage train_unsupervised_graphsage(const AdjList& adj,
 
   int n_feature = static_cast<int>(nodes.features.size(1));
   UnSupervisedGraphsage net(n_feature, hidden_dim);
-  SGD optim(net.parameters(), 0.01);
+  SGD optim(net.parameters(), 0.1);
 
   for (int epoch = 0; epoch < 10; epoch ++) {
 
@@ -90,7 +90,7 @@ void train_mlp(const Tensor& features,
                const Tensor& targets,
                int n_feature, int n_node, int n_class, int batch_size) {
   LogisticRegression net(n_feature, n_class);
-  SGD optim(net.parameters(), 0.1);
+  SGD optim(net.parameters(), 0.5);
 
   std::vector<int> node_ids;
   node_ids.resize(n_node);
@@ -120,7 +120,7 @@ void train_mlp(const Tensor& features,
     validate_t[i] = targets[node];
   }
 
-  for (int epoch = 0; epoch < 10; epoch ++) {
+  for (int epoch = 0; epoch < 100; epoch ++) {
     int idx = 0;
     for (auto batch: *loader) {
       optim.zero_grad();
@@ -140,7 +140,6 @@ void train_mlp(const Tensor& features,
 
       loss.backward();
       optim.step();
-      std::cout << loss.item() << std::endl;
     }
 
     // validate
@@ -153,7 +152,7 @@ void train_mlp(const Tensor& features,
 
 }
 
-void classify(int n_feature, int n_class, int n_node) {
+void classify(int n_feature, int n_class, int n_node, const Nodes& nodes) {
   Tensor features, targets;
   torch::load(features, "features.pt");
   torch::load(targets, "targets.pt");
@@ -162,10 +161,17 @@ void classify(int n_feature, int n_class, int n_node) {
   std::cout << targets.sizes()  << std::endl;
 
   features.set_requires_grad(false);
+  std::vector<Tensor> tensors;
+  tensors.push_back(features);
+  tensors.push_back(nodes.features);
+  TensorList list(tensors.data(), tensors.size());
+  auto cat_features = torch::cat(list, 1);
 
-  std::cout << features[0] << std::endl;
+  cat_features.set_requires_grad(false);
 
-  train_mlp(features, targets, n_feature, n_node, n_class, 128);
+//  std::cout << features[0] << std::endl;
+
+  train_mlp(cat_features, targets, cat_features.size(1), n_node, n_class, 128);
 }
 
 void save_embedding(UnSupervisedGraphsage net, int n_feature, int n_class, int n_node,
@@ -196,9 +202,11 @@ int main() {
   load_edges(edge_path, &adj);
   load_edges(edge_path, &edges);
   load_features(node_path, &nodes, n_features, n_nodes);
+
+//  init::xavier_uniform_(nodes.features);
   int dim = 128;
 //  auto graphsage = train_unsupervised_graphsage(adj, nodes, edges, 128, dim, 3);
-  classify(dim, 7, n_nodes);
+  classify(dim, 7, n_nodes, nodes);
 //  save_embedding(graphsage, dim, 7, n_nodes, nodes, adj);
   return 0;
 }
