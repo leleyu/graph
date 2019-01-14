@@ -11,6 +11,7 @@ include_directories("include/")
 set(HEADER include/graph/dataset.h
         include/graph/model.h
         include/graph/mean.h
+        include/graph/metric.h
         include/graph/graphsage.h)
 
 set(SRC src/dataset.cpp src/mean.cpp src/graphsage.cpp)
