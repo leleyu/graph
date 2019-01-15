@@ -577,6 +577,22 @@ void test_load_tensor() {
   std::cout << t << std::endl;
 }
 
+void test_numpy() {
+  auto a = torch::ones({2, 3});
+
+}
+
+
+void test_binary_save() {
+  std::string path = "output.b";
+  FILE *f = fopen(path.c_str(), "wb");
+  std::vector<float> data;
+  data.resize(10);
+  for (int i = 0; i < 10; i ++) data[i] = i;
+  fwrite(data.data(), sizeof(float), 10, f);
+  fclose(f);
+}
+
 int main() {
 //  DummyDataset d;
 //  std::vector<int> batch = d.get_batch({0, 1, 2, 3, 4});
@@ -627,7 +643,8 @@ int main() {
 //  test_edge_dataset();
 //  test_matmul();
 //  test_save_tensor();
-  test_load_tensor();
+//  test_load_tensor();
+  test_binary_save();
   return 0;
 }
 

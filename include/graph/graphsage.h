@@ -27,6 +27,12 @@ public:
   Tensor include_neibours(const Tensor& nodes,
                           const AdjList& adj);
 
+  // loss function for unsupervised graphsage
+  Tensor pairwise_loss(const Tensor& src, const Tensor& dst, const Tensor& negs);
+
+  // save the embeddings of nodes and the nodes id_map
+  void save(const std::string& path, const Nodes& nodes, const AdjList& adj);
+
   // Two layers with mean aggregate
   graph::nn::Mean layer1{nullptr};
   graph::nn::Mean layer2{nullptr};

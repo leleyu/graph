@@ -64,6 +64,45 @@ Tensor UnSupervisedGraphsage::forward(const Tensor& nodes,
   return h2;
 }
 
+Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src, const at::Tensor &dst,
+    const at::Tensor &negs) {
+  // src [batch_size, dim], dst [batch_size, dim], negs [batch_size, neg_num, dim]
+  auto batch_size = src.size(0);
+  auto dim = src.size(1);
+  auto sv = src.view({batch_size, dim, 1});
+  auto dv = dst.view({batch_size, 1, dim});
+  // positive loss between srcs and dsts
+  auto pos_loss = -torch::log(torch::sigmoid(dv.matmul(sv)));
+  // negative loss between srcs and negative nodes
+  auto neg_loss = -torch::log(torch::sigmoid(negs.matmul(sv)));
+  // return average loss
+  auto size = batch_size + batch_size * neg_loss.size(1);
+  return (pos_loss.sum() + neg_loss.sum()) / size;
+}
+
+void UnSupervisedGraphsage::save(const std::string &path,
+    const graph::dataset::Nodes &nodes,
+    const graph::dataset::AdjList &adj) {
+
+  int64_t n_node = nodes.node_to_index.size();
+  Tensor node_ids = torch::empty({n_node}, TensorOptions().dtype(kInt32));
+  auto accessor = node_ids.accessor<int, 1>();
+  size_t idx = 0;
+  for (auto node: nodes.node_to_index) {
+    accessor[idx++] = node.first;
+  }
+
+  auto embeddings = forward(node_ids, nodes.features, nodes.node_to_index, adj);
+  FILE* f = fopen((path + "/embedding.b").c_str(), "wb");
+
+  fwrite(embeddings.data_ptr(), sizeof(float), n_node * embeddings.size(1), f);
+  fclose(f);
+
+  f = fopen((path + "/id_map.b").c_str(), "wb");
+
+  fwrite(node_ids.data_ptr(), sizeof(int), n_node, f);
+  fclose(f);
+}
 
 SupervisedGraphsage::SupervisedGraphsage(int n_class, int n_feature, int hidden_dim):
   UnSupervisedGraphsage(n_feature, hidden_dim) {

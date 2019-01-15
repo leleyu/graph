@@ -5,6 +5,7 @@ from collections import defaultdict
 id_map = dict()
 label_map = dict()
 writer = open('cora.content.id', 'w')
+label_writer = open('cora_label', 'w')
 
 with open('cora.content') as fp:
   for i, line in enumerate(fp):
@@ -23,6 +24,8 @@ with open('cora.content') as fp:
     
     output = '%s %s %s\n' % (str(i), label, ' '.join(indices))
     writer.write(output)
+    output = '%s %s\n' % (str(i), label)
+    label_writer.write(output)
 
 
 edges = defaultdict(set)
