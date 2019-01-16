@@ -80,6 +80,18 @@ Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src, const at::Ten
   return (pos_loss.sum() + neg_loss.sum()) / size;
 }
 
+Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src, const at::Tensor &dst) {
+  // src [batch_size, dim], dst [batch_size, dim]
+  auto batch_size = src.size(0);
+  auto dim = src.size(1);
+  auto sv = src.view({batch_size, dim, 1});
+  auto dv = dst.view({batch_size, 1, dim});
+  // positive loss between srcs and dsts
+  auto pos_loss = -torch::log(torch::sigmoid(dv.matmul(sv)));
+
+  return pos_loss.squeeze().mean();
+}
+
 void UnSupervisedGraphsage::save(const std::string &path,
     const graph::dataset::Nodes &nodes,
     const graph::dataset::AdjList &adj) {

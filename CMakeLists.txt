@@ -10,11 +10,16 @@ include_directories("include/")
 
 set(HEADER include/graph/dataset.h
         include/graph/model.h
-        include/graph/mean.h
+        include/graph/layer.h
         include/graph/metric.h
-        include/graph/graphsage.h)
+        include/graph/graphsage.h
+        include/graph/sampler.h)
 
-set(SRC src/dataset.cpp src/mean.cpp src/graphsage.cpp src/metric.cpp)
+set(SRC src/dataset.cpp
+        src/layer.cpp
+        src/graphsage.cpp
+        src/metric.cpp
+        src/sampler.cpp)
 
 add_executable(supervised src/supervised.cpp ${HEADER} ${SRC})
 add_executable(my_test src/test.cpp ${HEADER} ${SRC})

@@ -1,5 +1,5 @@
 
-#include <graph/mean.h>
+#include <graph/layer.h>
 
 namespace graph {
 namespace nn {

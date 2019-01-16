@@ -77,7 +77,7 @@ torch::data::Example<> parseLibSVM(std::string str, size_t n_dim) {
   return {data, label};
 }
 
-void load_edges(const std::string& path, AdjList* adj) {
+void load_edges(const std::string &path, AdjList *adj) {
   std::ifstream in(path);
   std::string line, c;
 
@@ -99,16 +99,16 @@ void load_edges(const std::string& path, AdjList* adj) {
     }
 
     adj->starts.push_back(static_cast<int>(adj->dsts.size()));
-    cnt ++;
+    cnt++;
   }
 }
 
-void load_edges(const std::string& path, Edges* edges) {
+void load_edges(const std::string &path, Edges *edges) {
   std::ifstream in(path);
   std::string line, c;
 
-  std::vector<int>& srcs = edges->srcs;
-  std::vector<int>& dsts = edges->dsts;
+  std::vector<int> &srcs = edges->srcs;
+  std::vector<int> &dsts = edges->dsts;
 
   while (getline(in, line)) {
     std::istringstream is(line);
@@ -125,13 +125,13 @@ void load_edges(const std::string& path, Edges* edges) {
   }
 }
 
-void load_features(const std::string& path, Nodes* nodes,
-  int n_feature, int n_node) {
+void load_features(const std::string &path, Nodes *nodes,
+                   int n_feature, int n_node) {
   std::ifstream in(path);
   std::string line, c;
 
   nodes->features = torch::empty({n_node, n_feature});
-  nodes->labels   = torch::empty({n_node});
+  nodes->labels = torch::empty({n_node});
   nodes->features.set_requires_grad(false);
 
   int cnt = 0;
@@ -151,24 +151,45 @@ void load_features(const std::string& path, Nodes* nodes,
       f[index] = 1.0f;
     }
 
-    cnt ++;
+    cnt++;
   }
+}
+
+void random_features(const std::string &path, Nodes *nodes,
+                     int n_feature, int n_node) {
+  std::ifstream in(path);
+  std::string line, c;
+
+  nodes->features = torch::empty({n_node, n_feature});
+  nodes->features.set_requires_grad(false);
+
+  int cnt = 0;
+  while (getline(in, line)) {
+    std::istringstream is(line);
+    // node_id
+    getline(is, c , ' ');
+    auto node_id = std::stoi(c);
+    nodes->node_to_index[node_id] = cnt;
+    cnt++;
+  }
+
+  torch::nn::init::xavier_normal_(nodes->features);
 }
 
 // Generate random walk with Adj, for each node, we generate `n_walks` walks
 // with each walk of `n_length`. The generated walks is stored in a tensor with
 // dim [n_walks*n_nodes, n_length]
-torch::Tensor random_walk(const AdjList& adj, int n_walks, int n_length) {
+torch::Tensor random_walk(const AdjList &adj, int n_walks, int n_length) {
 
   int n_nodes = adj.src_to_index.size();
-  auto walks = torch::zeros({n_nodes*n_walks, n_length}, torch::TensorOptions().dtype(torch::kInt32));
+  auto walks = torch::zeros({n_nodes * n_walks, n_length}, torch::TensorOptions().dtype(torch::kInt32));
   int walk_idx = 0;
   srand(time(NULL));
 
-  for (auto it = adj.src_to_index.begin(); it != adj.src_to_index.end(); it ++) {
+  for (auto it = adj.src_to_index.begin(); it != adj.src_to_index.end(); it++) {
     int node = it->first;
 
-    for (int i = 0; i < n_walks; i ++) {
+    for (int i = 0; i < n_walks; i++) {
       walks[walk_idx] = -1;
       auto current_walk = walks[walk_idx];
       auto accessor = current_walk.accessor<int, 1>();
@@ -198,28 +219,28 @@ torch::Tensor random_walk(const AdjList& adj, int n_walks, int n_length) {
 // Generate negative sampling for nodes in `nodes`, for each node, we generate
 // `n_neg` negative samples that are not similar with this node.
 // The return tensor contains size(nodes)*n_neg negatives samples.
-torch::Tensor negative_sampling(const AdjList& adj,
-    const torch::Tensor& nodes, int n_neg, int n_nodes) {
-  
+torch::Tensor negative_sampling(const AdjList &adj,
+                                const torch::Tensor &nodes, int n_neg, int n_nodes) {
+
   auto negs = torch::zeros({nodes.size(0), n_neg}, torch::TensorOptions().dtype(torch::kInt32));
   auto accessor = nodes.accessor<int, 1>();
   srand(time(NULL));
-  
+
   std::set<int> nbs;
-  for (int i = 0; i < nodes.size(0); i ++) {
+  for (int i = 0; i < nodes.size(0); i++) {
     int node = accessor[i];
     nbs.clear();
-    
+
     auto it = adj.src_to_index.find(node);
     if (it != adj.src_to_index.end()) {
       int index = it->second;
-      for (int j = adj.starts[index]; j < adj.starts[index+1]; j ++)
+      for (int j = adj.starts[index]; j < adj.starts[index + 1]; j++)
         nbs.insert(adj.dsts[j]);
     }
-    
+
     auto current_neg = negs[i];
     auto f = current_neg.accessor<int, 1>();
-    for (int j = 0; j < n_neg; j ++) {
+    for (int j = 0; j < n_neg; j++) {
       int n;
       do {
         n = rand() % n_nodes;

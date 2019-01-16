@@ -10,6 +10,7 @@
 #include <torch/nn/pimpl.h>
 #include <torch/types.h>
 #include <graph/dataset.h>
+#include <graph/sampler.h>
 
 namespace graph {
 namespace nn {
@@ -25,6 +26,23 @@ struct MeanOptions {
 using namespace torch;
 using namespace torch::nn;
 using namespace graph::dataset;
+using namespace graph::sampler;
+
+class GraphLayer {
+
+
+
+  /// forward with nodes and its neibours.
+  /// nodes dimension [n_node], neibours dimension [n_node, n_nb]
+  /// We assume that each node has the same number of neibors.
+  /// If more, we do sampling among its neibours; if less, we set it as -1
+  virtual Tensor forward(const Tensor& nodes, const Tensor& neibours,
+                 const Tensor& features,
+                 const std::unordered_map<int, int>& node_to_index);
+
+
+  const NeibourSampler& sampler;
+};
 
 /// Mean aggregator for neibours
 class MeanImpl : public Cloneable<MeanImpl> {
@@ -53,7 +71,13 @@ public:
   MeanOptions options;
 };
 
+class Mean0Impl : public Cloneable<MeanImpl>, public GraphLayer {
+
+};
+
 TORCH_MODULE(Mean);
+
+TORCH_MODULE(Mean0);
 
 } // namespace nn
 } // namespace graph

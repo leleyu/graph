@@ -5,7 +5,7 @@
 #ifndef GRAPH_GRAPHSAGE_H
 #define GRAPH_GRAPHSAGE_H
 
-#include <graph/mean.h>
+#include <graph/layer.h>
 
 
 namespace graph {
@@ -14,6 +14,18 @@ namespace nn {
 using namespace torch::nn;
 using namespace torch;
 using namespace graph::dataset;
+
+
+struct LayerDesc {
+  std::string layer_type;
+  std::string sampler_type;
+  int num_samples;
+  int input_dim;
+  int output_dim;
+};
+
+
+GraphLayer buildLayer(LayerDesc desc);
 
 class UnSupervisedGraphsage: public Module {
 public:
@@ -29,6 +41,9 @@ public:
 
   // loss function for unsupervised graphsage
   Tensor pairwise_loss(const Tensor& src, const Tensor& dst, const Tensor& negs);
+
+  // loss function without negtive samples
+  Tensor pairwise_loss(const Tensor& src, const Tensor& dst);
 
   // save the embeddings of nodes and the nodes id_map
   void save(const std::string& path, const Nodes& nodes, const AdjList& adj);

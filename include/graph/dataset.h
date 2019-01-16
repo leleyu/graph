@@ -12,7 +12,7 @@ namespace dataset {
 
 
 torch::data::Example<> parseLibSVM(std::string str);
-    
+
 torch::data::Example<> parseLibSVM(std::string str, size_t n_dim);
 
 
@@ -38,8 +38,8 @@ private:
   std::vector<torch::data::Example<>> examples;
 };
 
-struct NodeDataset: torch::data::datasets::Dataset<NodeDataset, int> {
-  explicit NodeDataset(const std::vector<int>& nodes, size_t size): nodes(nodes), num(size) {}
+struct NodeDataset : torch::data::datasets::Dataset<NodeDataset, int> {
+  explicit NodeDataset(const std::vector<int> &nodes, size_t size) : nodes(nodes), num(size) {}
 
   int get(size_t index) override {
     return nodes[index];
@@ -49,14 +49,14 @@ struct NodeDataset: torch::data::datasets::Dataset<NodeDataset, int> {
     return num;
   }
 
-  const std::vector<int>& nodes;
+  const std::vector<int> &nodes;
   size_t num;
 };
 
-struct EdgeDataset: torch::data::datasets::Dataset<EdgeDataset, torch::Tensor> {
+struct EdgeDataset : torch::data::datasets::Dataset<EdgeDataset, torch::Tensor> {
 
-  explicit EdgeDataset(const std::vector<int>& srcs,
-      const std::vector<int>& dsts): srcs(srcs), dsts(dsts) {}
+  explicit EdgeDataset(const std::vector<int> &srcs,
+                       const std::vector<int> &dsts) : srcs(srcs), dsts(dsts) {}
 
   torch::Tensor get(size_t index) override {
     return torch::zeros({1});
@@ -85,14 +85,25 @@ struct EdgeDataset: torch::data::datasets::Dataset<EdgeDataset, torch::Tensor> {
     return srcs.size();
   }
 
-  const std::vector<int>& srcs;
-  const std::vector<int>& dsts;
+  const std::vector<int> &srcs;
+  const std::vector<int> &dsts;
 };
 
 struct AdjList {
   std::vector<int> starts;
   std::vector<int> dsts;
   std::unordered_map<int, int> src_to_index;
+
+
+  size_t degree(int node) const {
+    auto it = src_to_index.find(node);
+    if (it != src_to_index.end()) {
+      int index = it->second;
+      return starts[index + 1] - starts[index];
+    } else {
+      return 0;
+    }
+  }
 };
 
 struct Edges {
@@ -106,23 +117,26 @@ struct Nodes {
   std::unordered_map<int, int> node_to_index;
 };
 
-void load_edges(const string& path, AdjList* adj);
+void load_edges(const string &path, AdjList *adj);
 
-void load_edges(const string& path, Edges* edges);
+void load_edges(const string &path, Edges *edges);
 
-void load_features(const string& path, Nodes *node,
-  int n_feature, int n_node);
+void load_features(const string &path, Nodes *node,
+                   int n_feature, int n_node);
+
+void random_features(const string &path, Nodes *node,
+                     int n_feature, int n_node);
 
 // Generate random walk with Adj, for each node, we generate `n_walks` walks
 // with each walk of `n_length`. The generated walks is stored in a tensor with
 // dim [n_walks*size(nodes), n_length]
-torch::Tensor random_walk(const AdjList& adj, int n_walks, int n_length);
+torch::Tensor random_walk(const AdjList &adj, int n_walks, int n_length);
 
 // Generate negative sampling for nodes in `nodes`, for each node, we generate
 // `n_neg` negative samples that are not similar with this node.
 // The return tensor contains size(nodes)*n_neg negatives samples.
-torch::Tensor negative_sampling(const AdjList& adj,
-  const torch::Tensor& nodes, int n_neg, int n_nodes);
+torch::Tensor negative_sampling(const AdjList &adj,
+                                const torch::Tensor &nodes, int n_neg, int n_nodes);
 
 } // namespace dataset
 } // namespace graph

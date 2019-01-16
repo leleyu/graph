@@ -6,7 +6,7 @@
 #define GRAPH_MODEL_H
 
 #include <torch/torch.h>
-#include <graph/mean.h>
+#include <graph/layer.h>
 #include <graph/dataset.h>
 
 using namespace torch;
