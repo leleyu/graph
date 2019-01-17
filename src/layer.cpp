@@ -96,5 +96,66 @@ void MeanImpl::reset() {
   torch::nn::init::xavier_uniform_(weight);
 }
 
+
+
+Tensor Mean0Impl::forward(const Tensor &nodes, const Tensor &neibours,
+                          const Tensor &features,
+                          const std::unordered_map<int, int> &node_to_index) {
+  int64_t n_node = nodes.size(0);
+  int64_t dim = features.size(1);
+
+
+  auto neibors_feature = torch::zeros({n_node, dim});
+  auto a = neibours.accessor<int, 2>();
+  for (int64_t i = 0; i < a.size(0); i++) {
+    // each node
+    auto neibor_feature = neibors_feature[i];
+    int cnt = 0;
+    for (int64_t j = 0; j < a.size(1); j++) {
+      int neibor = a[i][j];
+      if (neibor != -1) {
+        int index = node_to_index.find(neibor)->second;
+        neibor_feature.add_(features[index]);
+        cnt++;
+      }
+    }
+    neibor_feature.div_(cnt);
+  }
+
+  auto accessor = nodes.accessor<int, 1>();
+
+  // self is [n_node, n_feature]
+  std::vector<Tensor> selfs;
+  for (int64_t i = 0; i < n_node; i ++) {
+    int node = accessor[i];
+    int index = node_to_index.find(node)->second;
+    selfs.push_back(features[index].view({1, options.in_}));
+  }
+
+  // cat selfs
+  TensorList self_lists(selfs.data(), selfs.size());
+  auto self = cat(self_lists, 0);
+
+  std::vector<Tensor> tensors;
+  tensors.push_back(self);
+  tensors.push_back(neibors_feature);
+  TensorList list(tensors.data(), tensors.size());
+
+  // combined is [n_node, n_feature * 2]
+  auto combined = cat(list, 1);
+
+  // output [n_node, output_dim]
+  return relu(combined.mm(weight));
+}
+
+Mean0Impl::Mean0Impl(MeanOptions options): options(options) {
+  reset();
+}
+
+void Mean0Impl::reset() {
+  weight = register_parameter("weight", torch::zeros({options.in_ * 2, options.out_}));
+  torch::nn::init::xavier_uniform_(weight);
+}
+
 } // namespace nn
 } // namespace graph

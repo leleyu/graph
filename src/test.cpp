@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <ctime>
+#include <algorithm>
 
 using namespace torch::data;
 using namespace torch;
@@ -593,6 +594,67 @@ void test_binary_save() {
   fclose(f);
 }
 
+void test_random_shuffle_new() {
+
+
+  srand(time(NULL));
+  int* data = new int[10];
+  for (int i = 0; i < 10; i ++) data[i] = i;
+
+  std::random_shuffle(&data[0], &data[10]);
+
+  for (int i = 0; i < 10; i ++) std::cout << data[i] << " ";
+
+  std::cout << std::endl;
+
+
+  std::vector<int> vector;
+  vector.resize(10);
+
+  for (int i = 0; i < 10; i++) vector[i] = i;
+
+  std::random_shuffle(&vector[0], &vector[10]);
+
+  std::cout << vector << std::endl;
+  delete[] data;
+}
+
+class Father {
+public:
+  Father() {}
+
+  virtual ~Father() {
+    std::cout << "del Father" << std::endl;
+  }
+
+  virtual void print() {
+    std::cout << "Father" << std::endl;
+  }
+};
+
+class Son : public Father {
+public:
+  ~Son() override {
+    std::cout << "del Son" << std::endl;
+  }
+
+  void print() override {
+    std::cout << "Son" << std::endl;
+  }
+};
+
+std::shared_ptr<Father> test_make_shared_ptr() {
+  std::shared_ptr<Father> p(new Son());
+  p->print();
+  return p;
+}
+
+void test_shared_ptr() {
+  std::shared_ptr<Father> p = test_make_shared_ptr();
+  p->print();
+  std::cout << p.use_count() << std::endl;
+}
+
 int main() {
 //  DummyDataset d;
 //  std::vector<int> batch = d.get_batch({0, 1, 2, 3, 4});
@@ -644,7 +706,9 @@ int main() {
 //  test_matmul();
 //  test_save_tensor();
 //  test_load_tensor();
-  test_binary_save();
+//  test_binary_save();
+//  test_random_shuffle_new();
+  test_shared_ptr();
   return 0;
 }
 

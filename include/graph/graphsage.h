@@ -15,18 +15,6 @@ using namespace torch::nn;
 using namespace torch;
 using namespace graph::dataset;
 
-
-struct LayerDesc {
-  std::string layer_type;
-  std::string sampler_type;
-  int num_samples;
-  int input_dim;
-  int output_dim;
-};
-
-
-GraphLayer buildLayer(LayerDesc desc);
-
 class UnSupervisedGraphsage: public Module {
 public:
   explicit UnSupervisedGraphsage(int n_feature, int hidden_dim);
@@ -38,6 +26,11 @@ public:
 
   Tensor include_neibours(const Tensor& nodes,
                           const AdjList& adj);
+
+  std::vector<std::pair<Tensor, Tensor>> neibours(const Tensor& nodes,
+      const AdjList& adj,
+      NeibourSampler* sampler,
+      const std::vector<int> num_samples);
 
   // loss function for unsupervised graphsage
   Tensor pairwise_loss(const Tensor& src, const Tensor& dst, const Tensor& negs);

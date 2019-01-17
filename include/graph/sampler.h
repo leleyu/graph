@@ -17,7 +17,7 @@ using namespace graph::dataset;
 class NeibourSampler {
 
 public:
-  virtual Tensor sample(const AdjList& adj, const Tensor& nodes, int num_sample) const;
+  virtual Tensor sample(const AdjList& adj, const Tensor& nodes, int num_sample) const = 0;
 
 };
 

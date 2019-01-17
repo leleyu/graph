@@ -6,14 +6,17 @@ namespace nn {
 using namespace torch;
 using namespace torch::nn;
 using namespace graph::dataset;
+using namespace graph::sampler;
+
+
 
 UnSupervisedGraphsage::UnSupervisedGraphsage(int n_feature, int hidden_dim) {
   layer1 = register_module("layer1", graph::nn::Mean(n_feature, hidden_dim));
   layer2 = register_module("layer2", graph::nn::Mean(hidden_dim, hidden_dim));
 }
 
-Tensor UnSupervisedGraphsage::include_neibours(const Tensor& nodes,
-                                             const AdjList &adj) {
+Tensor UnSupervisedGraphsage::include_neibours(const Tensor &nodes,
+                                               const AdjList &adj) {
 
   std::set<int> neibours;
   int n_nodes = static_cast<int>(nodes.size(0));
@@ -37,10 +40,43 @@ Tensor UnSupervisedGraphsage::include_neibours(const Tensor& nodes,
   return tensor;
 }
 
-Tensor UnSupervisedGraphsage::forward(const Tensor& nodes,
-                                    const Tensor& features,
-                                    const std::unordered_map<int, int>& node_to_index,
-                                    const AdjList& adj) {
+std::vector<std::pair<Tensor, Tensor>> UnSupervisedGraphsage::neibours(const Tensor &nodes, const AdjList &adj,
+                                                    NeibourSampler *sampler,
+                                                    const std::vector<int> num_samples) {
+  std::vector<std::pair<Tensor, Tensor>> results;
+  size_t n_layers = num_samples.size();
+  results.resize(n_layers);
+
+  auto current = nodes;
+
+  for (size_t i = n_layers - 1; i >= 0; i --) {
+    auto nb_samples = sampler->sample(adj, current, num_samples[i]);
+    results.push_back(std::make_pair(current, nb_samples));
+
+    auto a = nb_samples.accessor<int, 2>();
+    if (i > 0) {
+      std::set<int> set;
+      auto a = nb_samples.accessor<int, 2>();
+      for (int i = 0; i < a.size(0); i ++)
+        for (int j = 0; j < a.size(1);j ++)
+           set.insert(a[i][j]);
+
+      size_t size = set.size();
+      current = torch::empty({static_cast<int64_t >(size)}, TensorOptions().dtype(kInt32));
+      auto b = current.accessor<int, 1>();
+      int idx = 0;
+      for (auto n : set)
+        b[idx++] = n;
+    }
+  }
+
+  return results;
+}
+
+Tensor UnSupervisedGraphsage::forward(const Tensor &nodes,
+                                      const Tensor &features,
+                                      const std::unordered_map<int, int> &node_to_index,
+                                      const AdjList &adj) {
 
   // Include neibours of first-order
   auto first = include_neibours(nodes, adj);
@@ -48,7 +84,7 @@ Tensor UnSupervisedGraphsage::forward(const Tensor& nodes,
   std::unordered_map<int, int> index1;
   int64_t n_first = first.size(0);
   auto accessor = first.accessor<int, 1>();
-  for (int i = 0; i < n_first; i ++)
+  for (int i = 0; i < n_first; i++)
     index1[accessor[i]] = i;
 
   // h1 is [number_of_first, hidden_dim]
@@ -64,8 +100,9 @@ Tensor UnSupervisedGraphsage::forward(const Tensor& nodes,
   return h2;
 }
 
-Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src, const at::Tensor &dst,
-    const at::Tensor &negs) {
+Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src,
+                                            const at::Tensor &dst,
+                                            const at::Tensor &negs) {
   // src [batch_size, dim], dst [batch_size, dim], negs [batch_size, neg_num, dim]
   auto batch_size = src.size(0);
   auto dim = src.size(1);
@@ -93,8 +130,8 @@ Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src, const at::Ten
 }
 
 void UnSupervisedGraphsage::save(const std::string &path,
-    const graph::dataset::Nodes &nodes,
-    const graph::dataset::AdjList &adj) {
+                                 const graph::dataset::Nodes &nodes,
+                                 const graph::dataset::AdjList &adj) {
 
   int64_t n_node = nodes.node_to_index.size();
   Tensor node_ids = torch::empty({n_node}, TensorOptions().dtype(kInt32));
@@ -105,7 +142,7 @@ void UnSupervisedGraphsage::save(const std::string &path,
   }
 
   auto embeddings = forward(node_ids, nodes.features, nodes.node_to_index, adj);
-  FILE* f = fopen((path + "/embedding.b").c_str(), "wb");
+  FILE *f = fopen((path + "/embedding.b").c_str(), "wb");
 
   fwrite(embeddings.data_ptr(), sizeof(float), n_node * embeddings.size(1), f);
   fclose(f);
@@ -116,21 +153,21 @@ void UnSupervisedGraphsage::save(const std::string &path,
   fclose(f);
 }
 
-SupervisedGraphsage::SupervisedGraphsage(int n_class, int n_feature, int hidden_dim):
-  UnSupervisedGraphsage(n_feature, hidden_dim) {
+SupervisedGraphsage::SupervisedGraphsage(int n_class, int n_feature, int hidden_dim) :
+    UnSupervisedGraphsage(n_feature, hidden_dim) {
   weight = register_parameter("weight", torch::rand({hidden_dim, n_class}));
   init::xavier_uniform_(weight);
 }
 
-Tensor SupervisedGraphsage::forward(const Tensor& nodes,
-  const Tensor& features,
-  const std::unordered_map<int, int>& node_to_index,
-  const AdjList& adj) {
+Tensor SupervisedGraphsage::forward(const Tensor &nodes,
+                                    const Tensor &features,
+                                    const std::unordered_map<int, int> &node_to_index,
+                                    const AdjList &adj) {
 
   auto h2 = UnSupervisedGraphsage::forward(nodes, features, node_to_index, adj);
 
   // output is [number_of_node, n_class]
-  auto output =  relu(h2.mm(weight));
+  auto output = relu(h2.mm(weight));
   return output;
 }
 

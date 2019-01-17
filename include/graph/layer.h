@@ -41,7 +41,6 @@ class GraphLayer {
                  const std::unordered_map<int, int>& node_to_index);
 
 
-  const NeibourSampler& sampler;
 };
 
 /// Mean aggregator for neibours
@@ -71,13 +70,30 @@ public:
   MeanOptions options;
 };
 
-class Mean0Impl : public Cloneable<MeanImpl>, public GraphLayer {
+class Mean0Impl : public Cloneable<Mean0Impl> {
+public:
+  Mean0Impl(int in, int out): Mean0Impl(MeanOptions(in, out)) {}
+  explicit Mean0Impl(MeanOptions options);
+
+
+  /// forward with nodes and its neibours.
+  /// nodes dimension [n_node], neibours dimension [n_node, n_nb]
+  /// We assume that each node has the same number of neibors.
+  /// If more, we do sampling among its neibours; if less, we set it as -1
+  virtual Tensor forward(const Tensor& nodes, const Tensor& neibours,
+                         const Tensor& features,
+                         const std::unordered_map<int, int>& node_to_index);
+
+  void reset() override;
+
+  /// The learned weight with dim [in, out]
+  Tensor weight;
+
+  MeanOptions options;
 
 };
 
 TORCH_MODULE(Mean);
-
-TORCH_MODULE(Mean0);
 
 } // namespace nn
 } // namespace graph
