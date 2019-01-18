@@ -110,11 +110,11 @@ Tensor Mean0Impl::forward(const Tensor &nodes, const Tensor &neibours,
   for (int64_t i = 0; i < a.size(0); i++) {
     // each node
     auto neibor_feature = neibors_feature[i];
-    int cnt = 0;
+    int32_t cnt = 0;
     for (int64_t j = 0; j < a.size(1); j++) {
-      int neibor = a[i][j];
+      int32_t neibor = a[i][j];
       if (neibor != -1) {
-        int index = node_to_index.find(neibor)->second;
+        int32_t index = node_to_index.find(neibor)->second;
         neibor_feature.add_(features[index]);
         cnt++;
       }
@@ -122,13 +122,13 @@ Tensor Mean0Impl::forward(const Tensor &nodes, const Tensor &neibours,
     neibor_feature.div_(cnt);
   }
 
-  auto accessor = nodes.accessor<int, 1>();
+  auto accessor = nodes.accessor<int32_t, 1>();
 
   // self is [n_node, n_feature]
   std::vector<Tensor> selfs;
   for (int64_t i = 0; i < n_node; i ++) {
-    int node = accessor[i];
-    int index = node_to_index.find(node)->second;
+    int32_t node = accessor[i];
+    int32_t index = node_to_index.find(node)->second;
     selfs.push_back(features[index].view({1, options.in_}));
   }
 

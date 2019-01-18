@@ -15,6 +15,18 @@ UnSupervisedGraphsage::UnSupervisedGraphsage(int n_feature, int hidden_dim) {
   layer2 = register_module("layer2", graph::nn::Mean(hidden_dim, hidden_dim));
 }
 
+UnSupervisedGraphsage::UnSupervisedGraphsage(int input_dim,
+    const std::vector<int32_t>& output_dim,
+    const std::vector<int32_t>& num_samples,
+    const NeibourSampler& sampler): sampler(sampler) {
+  auto n_layers = output_dim.size();
+  layers.resize(n_layers);
+  int32_t in = input_dim;
+  for (size_t l = 0; l < n_layers; l++) {
+    layers[l] = register_module("layer" + std::to_string(l), graph::nn::Mean(
+  }
+}
+
 Tensor UnSupervisedGraphsage::include_neibours(const Tensor &nodes,
                                                const AdjList &adj) {
 
@@ -34,15 +46,20 @@ Tensor UnSupervisedGraphsage::include_neibours(const Tensor &nodes,
     }
   }
 
-  auto tensor = torch::empty({static_cast<int>(neibours.size())}, TensorOptions().dtype(torch::kInt32));
+  auto tensor = torch::empty({static_cast<int>(neibours.size())}, 
+      TensorOptions().dtype(torch::kInt32));
+
   int idx = 0;
   for (auto n : neibours) tensor[idx++] = n;
   return tensor;
 }
 
-std::vector<std::pair<Tensor, Tensor>> UnSupervisedGraphsage::neibours(const Tensor &nodes, const AdjList &adj,
-                                                    NeibourSampler *sampler,
-                                                    const std::vector<int> num_samples) {
+std::vector<std::pair<Tensor, Tensor>> UnSupervisedGraphsage::neibours(const Tensor &nodes, 
+    const AdjList &adj, 
+    NeibourSampler *sampler,
+    const std::vector<int> num_samples) {
+  
+  // returned results 
   std::vector<std::pair<Tensor, Tensor>> results;
   size_t n_layers = num_samples.size();
   results.resize(n_layers);
@@ -50,27 +67,44 @@ std::vector<std::pair<Tensor, Tensor>> UnSupervisedGraphsage::neibours(const Ten
   auto current = nodes;
 
   for (size_t i = n_layers - 1; i >= 0; i --) {
+    // sample the neibors for this layer, nb_samples is [n_node, num_sample[i]]
     auto nb_samples = sampler->sample(adj, current, num_samples[i]);
     results.push_back(std::make_pair(current, nb_samples));
 
-    auto a = nb_samples.accessor<int, 2>();
+    auto a = nb_samples.accessor<int32_t, 2>();
     if (i > 0) {
+      // distinct nodes for the previous layers
       std::set<int> set;
-      auto a = nb_samples.accessor<int, 2>();
-      for (int i = 0; i < a.size(0); i ++)
-        for (int j = 0; j < a.size(1);j ++)
-           set.insert(a[i][j]);
+      
+      // insert nodes
+      auto a1 = current.accessor<int32_t, 1>();
+      for (int32_t i = 0; i < a1.size(0); i++)
+	set.insert(a1[i]);
+      
+      // insert neibors
+      auto a2 = nb_samples.accessor<int32_t, 2>();
+      for (int32_t i = 0; i < a2.size(0); i ++)
+        for (int32_t j = 0; j < a2.size(1);j ++)
+           set.insert(a2[i][j]);
 
       size_t size = set.size();
-      current = torch::empty({static_cast<int64_t >(size)}, TensorOptions().dtype(kInt32));
-      auto b = current.accessor<int, 1>();
-      int idx = 0;
+      // convert set to a one-dim tensor
+      current = torch::empty({static_cast<int64_t>(size)}, TensorOptions().dtype(kInt32));
+      auto b = current.accessor<int32_t, 1>();
+      int32_t idx = 0;
       for (auto n : set)
         b[idx++] = n;
     }
   }
 
   return results;
+}
+
+Tensor UnSupervisedGraphsage::forward(const Tensor& nodes,
+    const Tensor &features,
+    const std::unordered_map<int32_t, int32_t>& node_to_index,
+    const AdjList& adj) {
+
 }
 
 Tensor UnSupervisedGraphsage::forward(const Tensor &nodes,

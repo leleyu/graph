@@ -30,8 +30,6 @@ using namespace graph::sampler;
 
 class GraphLayer {
 
-
-
   /// forward with nodes and its neibours.
   /// nodes dimension [n_node], neibours dimension [n_node, n_nb]
   /// We assume that each node has the same number of neibors.
