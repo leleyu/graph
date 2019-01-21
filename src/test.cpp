@@ -2,17 +2,18 @@
 // Created by leleyu on 2018-12-25.
 //
 
-#include "torch/data.h"
-#include "torch/torch.h"
-#include "graph/model.h"
-#include "graph/dataset.h"
-
 #include <vector>
 #include <iostream>
 #include <unordered_map>
 #include <chrono>
 #include <ctime>
 #include <algorithm>
+
+#include "torch/data.h"
+#include "torch/torch.h"
+
+#include "graph/model.h"
+#include "graph/dataset.h"
 
 using namespace torch::data;
 using namespace torch;

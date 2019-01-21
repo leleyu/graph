@@ -2,14 +2,16 @@
 // Created by leleyu on 2018-12-25.
 //
 
+#include <graph/dataset.h>
 
-#include <torch/torch.h>
-#include "graph/dataset.h"
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+
 #include <sstream>
 #include <iostream>
 #include <vector>
+
+#include <torch/torch.h>
 
 
 namespace graph {

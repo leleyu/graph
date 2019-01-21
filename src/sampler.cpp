@@ -10,21 +10,25 @@ namespace sampler {
 using namespace torch;
 using namespace graph::dataset;
 
-Tensor UniformSampler::sample(const graph::dataset::AdjList &adj,
-    const torch::Tensor &nodes, int num_sample) const {
-  auto a = nodes.accessor<int, 1>();
+Tensor UniformSampler::sample(const graph::Graph &graph,
+                              const NodeArray &nodes,
+                              size_t num_sample) const {
+  size_t num_node = nodes.size();
 
-  std::vector<int>& dsts = const_cast<std::vector<int>&>(adj.dsts);
+  auto neighbors = torch::zeros({static_cast<int64_t>(num_node),
+                                 static_cast<int64_t>(num_sample)},
+                                     TensorOptions().dtype(kInt32));
 
-  auto neibors = torch::zeros({a.size(0), num_sample}, TensorOptions().dtype(kInt32));
-  auto an = neibors.accessor<int, 2>();
+  TensorOptions().dtype(kI32);
+  auto an = neighbors.accessor<int, 2>();
   for (int i = 0; i < an.size(0); i ++)
-    for (int j = 0; j < an.size(1); i ++)
+    for (int j = 0; j < an.size(1); j ++)
       an[i][j] = -1;
 
 
-  for (int i = 0; i < a.size(0); i ++) {
+  for (size_t i = 0; i < num_node; i ++) {
     int node = a[i];
+    if (graph.GetDegree(node))
     auto it = adj.src_to_index.find(node);
     if (it != adj.src_to_index.end()) {
       int idx = it->second;

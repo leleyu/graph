@@ -14,6 +14,7 @@ using namespace torch::optim;
 using namespace graph::dataset;
 using namespace graph::nn;
 using namespace graph::metric;
+using namespace graph::model;
 
 UnSupervisedGraphsage train(const AdjList& adj,
     const Nodes& nodes, const Edges& edges,

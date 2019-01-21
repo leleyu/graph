@@ -10,13 +10,13 @@
 namespace graph {
 namespace metric {
 
-using namespace torch;
+namespace th = torch;
 
-double precision_score(Tensor y_pred, Tensor y_true);
+double precision_score(th::Tensor y_pred, th::Tensor y_true);
 
-double roc_auc_score(Tensor y_pred, Tensor y_true);
+double roc_auc_score(th::Tensor y_pred, th::Tensor y_true);
 
-double f1_score(Tensor y_pred, Tensor y_true, const std::string& type = "micro");
+double f1_score(th::Tensor y_pred, th::Tensor y_true, const std::string& type = "micro");
 } // metric
 } // graph
 

@@ -13,13 +13,15 @@ set(HEADER include/graph/dataset.h
         include/graph/layer.h
         include/graph/metric.h
         include/graph/graphsage.h
-        include/graph/sampler.h)
+        include/graph/sampler.h
+        include/graph/graph.h)
 
 set(SRC src/dataset.cpp
         src/layer.cpp
         src/graphsage.cpp
         src/metric.cpp
-        src/sampler.cpp)
+        src/sampler.cpp
+        src/graph.cc)
 
 add_executable(supervised src/supervised.cpp ${HEADER} ${SRC})
 add_executable(my_test src/test.cpp ${HEADER} ${SRC})

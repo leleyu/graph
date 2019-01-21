@@ -11,6 +11,7 @@ using namespace torch::optim;
 using namespace torch::data;
 using namespace torch::data::samplers;
 using namespace graph::dataset;
+using namespace graph::model;
 
 double calculate_precision(torch::Tensor output, torch::Tensor target) {
   auto y = output.argmax(1).to(TensorOptions().dtype(kInt64));

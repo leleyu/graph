@@ -6,18 +6,19 @@
 #define GRAPH_SAMPLER_H
 
 #include <torch/torch.h>
+
 #include <graph/dataset.h>
+#include <graph/graph.h>
 
 namespace graph {
 namespace sampler {
 
-using namespace torch;
-using namespace graph::dataset;
-
 class NeibourSampler {
 
 public:
-  virtual Tensor sample(const AdjList& adj, const Tensor& nodes, int num_sample) const = 0;
+  virtual torch::Tensor sample(const graph::Graph& graph,
+                               const NodeArray& nodes,
+                               size_t num_sample) const = 0;
 
 };
 
@@ -26,7 +27,9 @@ public:
 class UniformSampler: public NeibourSampler {
 
 public:
-  Tensor sample(const AdjList &adj, const Tensor &nodes, int num_sample) const override;
+  virtual torch::Tensor sample(const graph::Graph &graph,
+                               const NodeArray &nodes,
+                               size_t num_sample) const override;
 };
 
 } // sampler
