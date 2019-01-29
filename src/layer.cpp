@@ -4,45 +4,41 @@
 namespace graph {
 namespace nn {
 
-using namespace torch;
-using namespace torch::nn;
-using namespace dataset;
+MeanOptions::MeanOptions(int in, int out) : in_(in), out_(out) {}
 
-MeanOptions::MeanOptions(int in, int out): in_(in), out_(out) {}
-
-MeanImpl::MeanImpl(MeanOptions options): options(options) {
+MeanImpl::MeanImpl(MeanOptions options) : options(options) {
   reset();
 }
 
-Tensor MeanImpl::forward(const Tensor& nodes,
-  const Tensor& features,
-  const std::unordered_map<int, int>& node_to_index,
-  const AdjList& adj) {
+torch::Tensor MeanImpl::forward(const torch::Tensor &nodes,
+                                const torch::Tensor &features,
+                                const std::unordered_map<int, int> &node_to_index,
+                                const dataset::AdjList &adj) {
 
   assert(nodes.dim() == 1);
 
   // neibour_features is [n_node, n_feature]
   auto neibour_features = aggregate(nodes, features, node_to_index, adj);
-  
+
   int n_nodes = static_cast<int>(nodes.size(0));
   auto accessor = nodes.accessor<int, 1>();
 
   // self is [n_node, n_feature]
-  std::vector<Tensor> selfs;
-  for (int i = 0; i < n_nodes; i ++) {
+  std::vector<torch::Tensor> selfs;
+  for (int i = 0; i < n_nodes; i++) {
     int node = accessor[i];
     int index = node_to_index.find(node)->second;
     selfs.push_back(features[index].view({1, options.in_}));
   }
 
   // cat selfs
-  TensorList self_lists(selfs.data(), selfs.size());
+  torch::TensorList self_lists(selfs.data(), selfs.size());
   auto self = cat(self_lists, 0);
 
-  std::vector<Tensor> tensors;
+  std::vector<torch::Tensor> tensors;
   tensors.push_back(self);
   tensors.push_back(neibour_features);
-  TensorList list(tensors.data(), tensors.size());
+  torch::TensorList list(tensors.data(), tensors.size());
 
   // combined is [n_node, n_feature * 2]
   auto combined = cat(list, 1);
@@ -51,19 +47,19 @@ Tensor MeanImpl::forward(const Tensor& nodes,
   return relu(combined.mm(weight));
 }
 
-Tensor MeanImpl::aggregate(const Tensor& nodes,
-  const Tensor& features,
-  const std::unordered_map<int, int>& node_to_index,
-  const AdjList& adj) {
+torch::Tensor MeanImpl::aggregate(const torch::Tensor &nodes,
+                                  const torch::Tensor &features,
+                                  const std::unordered_map<int, int> &node_to_index,
+                                  const dataset::AdjList &adj) {
 
   assert(nodes.dim() == 1);
   int64_t num_nodes = nodes.size(0);
   auto accessor = nodes.accessor<int, 1>();
 
   // aggregate and calculate the mean value of neibours
-  std::vector<Tensor> means;
+  std::vector<torch::Tensor> means;
 
-  for (int i = 0; i < num_nodes; i ++) {
+  for (int i = 0; i < num_nodes; i++) {
     int node = accessor[i];
     auto it = adj.src_to_index.find(node);
 
@@ -73,9 +69,9 @@ Tensor MeanImpl::aggregate(const Tensor& nodes,
     if (it != adj.src_to_index.end()) {
       // if has neibours
       int index = it->second;
-      int num_neibours = adj.starts[index+1] - adj.starts[index];
+      int num_neibours = adj.starts[index + 1] - adj.starts[index];
       // sum their features
-      for (int j = 0; j < num_neibours; j ++) {
+      for (int j = 0; j < num_neibours; j++) {
         int n = adj.dsts[adj.starts[index] + j];
         int idx = node_to_index.find(n)->second;
         nb.add_(features[idx]);
@@ -86,7 +82,7 @@ Tensor MeanImpl::aggregate(const Tensor& nodes,
     means.push_back(nb.view({1, options.in_}));
   }
 
-  TensorList list(means.data(), means.size());
+  torch::TensorList list(means.data(), means.size());
   return cat(list, 0);
 }
 
@@ -97,58 +93,40 @@ void MeanImpl::reset() {
 }
 
 
+torch::Tensor Mean0Impl::Forward(
+    const NodeArray &nodes,
+    const NodeArray &neighbors,
+    const SparseNodeEmbedding &embedding,
+    const size_t num_sample) {
+  int64_t num_node = static_cast<int64_t>(nodes.size());
+  int64_t dim = embedding.GetDim();
 
-Tensor Mean0Impl::forward(const Tensor &nodes, const Tensor &neibours,
-                          const Tensor &features,
-                          const std::unordered_map<int, int> &node_to_index) {
-  int64_t n_node = nodes.size(0);
-  int64_t dim = features.size(1);
+  // combine is [batch_size x 2 x dim]
+  auto combine = torch::zeros({num_node, 2, dim});
 
+  for (size_t i = 0; i < num_node; i++)
+    combine[i][0] = embedding.lookup(nodes[i]);
 
-  auto neibors_feature = torch::zeros({n_node, dim});
-  auto a = neibours.accessor<int, 2>();
-  for (int64_t i = 0; i < a.size(0); i++) {
-    // each node
-    auto neibor_feature = neibors_feature[i];
-    int32_t cnt = 0;
-    for (int64_t j = 0; j < a.size(1); j++) {
-      int32_t neibor = a[i][j];
-      if (neibor != -1) {
-        int32_t index = node_to_index.find(neibor)->second;
-        neibor_feature.add_(features[index]);
+  for (size_t i = 0; i < nodes.size(); i++) {
+    size_t start = i * num_sample;
+    auto f = combine[i][1];
+    int64_t cnt = 0;
+    for (size_t j = 0; j < num_sample; j++) {
+      NodeId neighbor = neighbors[start + j];
+      if (neighbor != NAN_NODE_ID) {
+        f.add_(embedding.lookup(neighbor));
         cnt++;
       }
     }
-    neibor_feature.div_(cnt);
+    f.div_(cnt);
   }
 
-  auto accessor = nodes.accessor<int32_t, 1>();
+  combine = combine.view({num_node, 2 * dim});
+  return torch::relu(combine.mm(weight));
 
-  // self is [n_node, n_feature]
-  std::vector<Tensor> selfs;
-  for (int64_t i = 0; i < n_node; i ++) {
-    int32_t node = accessor[i];
-    int32_t index = node_to_index.find(node)->second;
-    selfs.push_back(features[index].view({1, options.in_}));
-  }
-
-  // cat selfs
-  TensorList self_lists(selfs.data(), selfs.size());
-  auto self = cat(self_lists, 0);
-
-  std::vector<Tensor> tensors;
-  tensors.push_back(self);
-  tensors.push_back(neibors_feature);
-  TensorList list(tensors.data(), tensors.size());
-
-  // combined is [n_node, n_feature * 2]
-  auto combined = cat(list, 1);
-
-  // output [n_node, output_dim]
-  return relu(combined.mm(weight));
 }
 
-Mean0Impl::Mean0Impl(MeanOptions options): options(options) {
+Mean0Impl::Mean0Impl(MeanOptions options) : options(options) {
   reset();
 }
 

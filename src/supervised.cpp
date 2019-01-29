@@ -1,21 +1,7 @@
-
-
 #include <iostream>
-
 #include <torch/torch.h>
-
 #include <graph/dataset.h>
 #include <graph/graphsage.h>
-
-using namespace torch;
-
-
-double calculate_precision(torch::Tensor output, torch::Tensor target) {
-  auto y = output.argmax(1).to(TensorOptions().dtype(kInt64));
-  int n_right = torch::eq(y, target).sum().item().toInt();
-  int n_total = output.size(0);
-  return n_right * 1.0 / n_total;
-}
 
 void train_graphsage(const std::string& edge_path, const std::string& node_path,
   int n_feature, int n_node, int n_class, int n_hidden, int batch_size = 128) {

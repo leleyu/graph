@@ -11,61 +11,55 @@
 namespace graph {
 namespace nn {
 
-namespace th = torch;
-namespace gd = graph::dataset;
-namespace gs = graph::sampler;
+class UnSupervisedGraphsage : public torch::nn::Module {
+ public:
+  UnSupervisedGraphsage(int32_t input_dim,
+                        const graph::Graph &graph,
+                        const std::vector<int32_t> &output_dims,
+                        const std::vector<int32_t> &num_samples,
+                        const sampler::NeibourSampler &sampler);
 
-class UnSupervisedGraphsage : public th::nn::Module {
-public:
-  explicit UnSupervisedGraphsage(int32_t input_dim,
-                                 const std::vector<int32_t> &output_dims,
-                                 const std::vector<int32_t> &num_samples,
-                                 const gs::NeibourSampler &sampler);
+  // Forward given a batch of nodes. This output the hidden
+  // output of the last layer
+  virtual torch::Tensor Forward(const NodeArray &nodes);
 
-  virtual th::Tensor forward(const th::Tensor &nodes,
-                         const th::Tensor &features,
-                         const std::unordered_map<int, int> &node_to_index,
-                         const gd::AdjList &adj);
-
-  th::Tensor include_neibours(const th::Tensor &nodes,
-                          const gd::AdjList &adj);
-
-  // construct neibours for a batch of nodes using the neibour sampler ``sampler``.
-  // return a vector of pair <nodes, neibours> for each layer.
-  // the number of samples for neibor is given is ``num_samples`` for each layer.
-  std::vector<std::pair<th::Tensor, th::Tensor>> neibours(
-      const th::Tensor &nodes,
-      const gd::AdjList &adj,
-      const gs::NeibourSampler &sampler,
-      const std::vector<int> num_samples);
+  // Compute the hidden output of nodes for layer ``layer``.
+  torch::Tensor ComputeOutput(const NodeArray &nodes,
+                              int layer);
 
   // loss function for unsupervised graphsage
-  th::Tensor pairwise_loss(const th::Tensor &src, const th::Tensor &dst, const th::Tensor &negs);
+  torch::Tensor PairwiseLoss(const torch::Tensor &src,
+                             const torch::Tensor &dst,
+                             const torch::Tensor &negs);
 
-  // loss function without negtive samples
-  th::Tensor pairwise_loss(const th::Tensor &src, const th::Tensor &dst);
+  // loss function without negative samples
+  torch::Tensor PairwiseLoss(const torch::Tensor &src,
+                             const torch::Tensor &dst);
 
   // save the embeddings of nodes and the nodes id_map
-  void save(const std::string &path, const gd::Nodes &nodes, const gd::AdjList &adj);
+  void SaveOutput(const std::string &path);
 
   // Two layers with mean aggregate
   std::vector<graph::nn::Mean0> layers;
-  const gs::NeibourSampler &sampler;
+  const sampler::NeibourSampler &sampler;
   const std::vector<int32_t> &num_samples;
+  const graph::Graph &graph;
 };
 
 /// Supervised GraphSage Model
 class SupervisedGraphsage : public UnSupervisedGraphsage {
-public:
-  explicit SupervisedGraphsage(int32_t n_class, int32_t input_dim, int hidden_dim);
+ public:
+  SupervisedGraphsage(int32_t class_num,
+                      int32_t input_dim,
+                      const graph::Graph &graph,
+                      const std::vector<int32_t> &output_dims,
+                      const std::vector<int32_t> &num_samples,
+                      const sampler::NeibourSampler &sampler);
 
-  th::Tensor forward(const th::Tensor &nodes,
-                 const th::Tensor &features,
-                 const std::unordered_map<int, int> &node_to_index,
-                 const gd::AdjList &adj) override;
+  torch::Tensor Forward(const NodeArray& nodes) override;
 
   // The learned weight with dim [hidden_dim, n_class]
-  th::Tensor weight;
+  torch::Tensor weight;
 };
 
 } // namespace nn

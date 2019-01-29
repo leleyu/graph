@@ -24,40 +24,25 @@ struct MeanOptions {
   TORCH_ARG(int, out);
 };
 
-namespace th = torch;
-namespace gd = graph::dataset;
-
-class GraphLayer {
-
-  /// forward with nodes and its neibours.
-  /// nodes dimension [n_node], neibours dimension [n_node, n_nb]
-  /// We assume that each node has the same number of neibors.
-  /// If more, we do sampling among its neibours; if less, we set it as -1
-  virtual th::Tensor forward(const th::Tensor& nodes, const th::Tensor& neibours,
-                 const th::Tensor& features,
-                 const std::unordered_map<int, int>& node_to_index);
-
-
-};
-
 /// Mean aggregator for neibours
-class MeanImpl : public th::nn::Cloneable<MeanImpl> {
-public:
-  MeanImpl(int in, int out): MeanImpl(MeanOptions(in, out)) {}
+class MeanImpl : public torch::nn::Cloneable<MeanImpl> {
+ public:
+  MeanImpl(int in, int out) : MeanImpl(MeanOptions(in, out)) {}
+
   explicit MeanImpl(MeanOptions options);
 
   /// Aggregate and calculate the mean of  features of neibours.
   /// Then, multiplying the mean with `weight` and a `relu` activation
-  th::Tensor forward(const th::Tensor& nodes,
-    const th::Tensor& features,
-    const std::unordered_map<int, int>& node_to_index,
-    const gd::AdjList& adj);
+  torch::Tensor forward(const torch::Tensor &nodes,
+                        const torch::Tensor &features,
+                        const std::unordered_map<int, int> &node_to_index,
+                        const dataset::AdjList &adj);
 
   /// Aggregate the features of neibours without sampling
-  th::Tensor aggregate(const th::Tensor& nodes,
-    const th::Tensor& features,
-    const std::unordered_map<int, int>& node_to_index,
-    const gd::AdjList& adj);
+  torch::Tensor aggregate(const torch::Tensor &nodes,
+                          const torch::Tensor &features,
+                          const std::unordered_map<int, int> &node_to_index,
+                          const dataset::AdjList &adj);
 
   void reset() override;
 
@@ -67,24 +52,22 @@ public:
   MeanOptions options;
 };
 
-class Mean0Impl : public th::nn::Cloneable<Mean0Impl> {
-public:
-  Mean0Impl(int in, int out): Mean0Impl(MeanOptions(in, out)) {}
+class Mean0Impl : public torch::nn::Cloneable<Mean0Impl> {
+ public:
+  Mean0Impl(int in, int out) : Mean0Impl(MeanOptions(in, out)) {}
+
   explicit Mean0Impl(MeanOptions options);
 
 
-  /// forward with nodes and its neibours.
-  /// nodes dimension [n_node], neibours dimension [n_node, n_nb]
-  /// We assume that each node has the same number of neibors.
-  /// If more, we do sampling among its neibours; if less, we set it as -1
-  virtual th::Tensor forward(const th::Tensor& nodes, const th::Tensor& neibours,
-                         const th::Tensor& features,
-                         const std::unordered_map<int, int>& node_to_index);
+  torch::Tensor Forward(const NodeArray &nodes,
+                        const NodeArray &neighbors,
+                        const SparseNodeEmbedding &embedding,
+                        const size_t num_sample);
 
   void reset() override;
 
   /// The learned weight with dim [in, out]
-  th::Tensor weight;
+  torch::Tensor weight;
 
   MeanOptions options;
 

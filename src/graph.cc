@@ -46,7 +46,7 @@ void UndirectedGraph::Build() {
 }
 
 
-size_t UndirectedGraph::GetDegree(NodeId node) {
+size_t UndirectedGraph::GetDegree(NodeId node) const {
   auto it = adj_.lookup_table.find(node);
   if (it != adj_.lookup_table.end()) {
     int32_t index = it->second;
@@ -55,7 +55,7 @@ size_t UndirectedGraph::GetDegree(NodeId node) {
     return 0;
 }
 
-NodeId* UndirectedGraph::GetNeiborPtr(NodeId node) {
+NodeId* UndirectedGraph::GetNeighborPtr(NodeId node) {
   auto it = adj_.lookup_table.find(node);
   if (it != adj_.lookup_table.end()) {
     int32_t index = it->second;
@@ -63,7 +63,6 @@ NodeId* UndirectedGraph::GetNeiborPtr(NodeId node) {
   } else
     return nullptr;
 }
-
 
 
 

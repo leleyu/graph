@@ -14,6 +14,8 @@
 
 namespace graph {
 
+#define NAN_NODE_ID -1
+
 typedef int32_t NodeId;
 typedef std::unordered_map<NodeId, int32_t> IndexLookupTable;
 typedef std::vector<int32_t> IndexArray;
@@ -26,30 +28,65 @@ struct AdjList {
   IndexLookupTable lookup_table;
 };
 
-struct NodeInfo {
-  torch::Tensor features;
-  torch::Tensor labels;
-  IndexLookupTable lookup_table;
-};
-
 struct EdgeInfo {
   NodeArray srcs;
   NodeArray dsts;
 };
 
+class SparseNodeEmbedding {
+ public:
+  SparseNodeEmbedding(int64_t num_node, int64_t dim) {
+    data_ = torch::empty({num_node, dim});
+  }
+
+  SparseNodeEmbedding(const NodeArray &nodes, const torch::Tensor &embedding) {
+    data_ = embedding;
+    for (size_t i = 0; i < nodes.size(); i++)
+      table_[nodes[i]] = static_cast<int32_t>(i);
+  }
+
+  void insert(NodeId node, torch::Tensor feature) {
+    int32_t index = static_cast<int32_t>(table_.size());
+    table_[node] = index;
+    data_[index] = feature;
+  }
+
+  inline torch::Tensor lookup(NodeId node) const {
+    return data_[table_.find(node)->second];
+  }
+
+  torch::Tensor lookup(const NodeArray &nodes) const {
+    auto result = torch::empty({static_cast<int64_t>(nodes.size()),
+                                data_.size(1)});
+    for (size_t i = 0; i < nodes.size(); i++)
+      result[i] = lookup(nodes[i]);
+    return result;
+  }
+
+  int64_t GetDim() const {
+    return data_.size(1);
+  }
+
+ private:
+  torch::Tensor data_;
+  IndexLookupTable table_;
+};
+
 
 // Undirected Graph
 class UndirectedGraph {
-public:
-  // Methods for graph creatation
-  void AddEdge(NodeId src, NodeId dst) {
+ public:
+  UndirectedGraph(const SparseNodeEmbedding &embedding)
+      : input_embeddings_(embedding) {}
+
+  inline void AddEdge(NodeId src, NodeId dst) {
     edges_.srcs.push_back(src);
     edges_.dsts.push_back(dst);
     nodes_.insert(src);
     nodes_.insert(dst);
   }
 
-  void AddNode(NodeId node) {
+  inline void AddNode(NodeId node) {
     nodes_.insert(node);
   }
 
@@ -57,10 +94,18 @@ public:
   void Build();
 
   // Methods for graph accessing
-  size_t GetDegree(NodeId node);
+  size_t GetDegree(NodeId node) const;
 
-  size_t GetNumNode() {
+  const SparseNodeEmbedding &GetInputEmbedding() const {
+    return input_embeddings_;
+  }
+
+  size_t GetNumNode() const {
     return nodes_.size();
+  }
+
+  const NodeSet &GetNodeSet() const {
+    return nodes_;
   }
 
   size_t GetNumEdge() {
@@ -71,17 +116,22 @@ public:
     return nodes_.find(node) != nodes_.end();
   }
 
-  bool HasEdge(NodeId src, NodeId dst);
+  NodeId *GetNeighborPtr(NodeId node);
 
-  NodeId* GetNeiborPtr(NodeId node);
-
-private:
+ private:
   AdjList adj_;
   EdgeInfo edges_;
   NodeSet nodes_;
+  const SparseNodeEmbedding &input_embeddings_;
+
 };
 
 typedef UndirectedGraph Graph;
+
+void LoadGraph(const std::string &path, Graph *graph);
+
+void LoadSparseNodeEmbedding(const std::string &path,
+                             SparseNodeEmbedding *embedding);
 } // namespace graph
 
 #endif //GRAPH_GRAPH_H

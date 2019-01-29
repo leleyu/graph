@@ -3,15 +3,13 @@
 namespace graph {
 namespace nn {
 
-using namespace torch;
-using namespace torch::nn;
-using namespace graph::dataset;
-using namespace graph::sampler;
-
-UnSupervisedGraphsage::UnSupervisedGraphsage(int32_t input_dim, const std::vector<int32_t> &output_dims,
-                                             const std::vector<int32_t> &num_samples,
-                                             const graph::sampler::NeibourSampler &sampler) : sampler(sampler),
-                                                                                              num_samples(num_samples) {
+UnSupervisedGraphsage::UnSupervisedGraphsage(
+    int32_t input_dim,
+    const graph::Graph &graph,
+    const std::vector<int32_t> &output_dims,
+    const std::vector<int32_t> &num_samples,
+    const graph::sampler::NeibourSampler &sampler)
+    : graph(graph), sampler(sampler), num_samples(num_samples) {
   size_t n_layers = output_dims.size();
   for (size_t i = 0; i < n_layers; i++) {
     layers.push_back(register_module("layer" + std::to_string(i), graph::nn::Mean0(input_dim, output_dims[i])));
@@ -19,143 +17,44 @@ UnSupervisedGraphsage::UnSupervisedGraphsage(int32_t input_dim, const std::vecto
   }
 }
 
-
-
-Tensor UnSupervisedGraphsage::include_neibours(const Tensor &nodes,
-                                               const AdjList &adj) {
-
-  std::set<int> neibours;
-  int n_nodes = static_cast<int>(nodes.size(0));
-  auto accessor = nodes.accessor<int, 1>();
-  for (int i = 0; i < n_nodes; i++) {
-    int node = accessor[i];
-    neibours.insert(node);
-
-    auto it = adj.src_to_index.find(node);
-    if (it != adj.src_to_index.end()) {
-      int index = it->second;
-
-      for (int j = adj.starts[index]; j < adj.starts[index + 1]; j++)
-        neibours.insert(adj.dsts[j]);
-    }
-  }
-
-  auto tensor = torch::empty({static_cast<int>(neibours.size())},
-                             TensorOptions().dtype(torch::kInt32));
-
-  int idx = 0;
-  for (auto n : neibours) tensor[idx++] = n;
-  return tensor;
+torch::Tensor UnSupervisedGraphsage::Forward(const NodeArray &nodes) {
+  auto output = ComputeOutput(nodes, layers.size() - 1);
+  // normalization
+  auto norm = output.norm(2, 1)
+      .view({-1, 1})
+      .clamp_min(10e-15);
+  return output.div(norm);
 }
 
-std::vector<std::pair<Tensor, Tensor>> UnSupervisedGraphsage::neibours(
-    const Tensor &nodes,
-    const AdjList &adj,
-    const NeibourSampler& sampler,
-    const std::vector<int> num_samples) {
+torch::Tensor UnSupervisedGraphsage::ComputeOutput(const NodeArray &nodes,
+                                                   int layer) {
 
-  // returned results 
-  std::vector<std::pair<Tensor, Tensor>> results;
-  size_t n_layers = num_samples.size();
-  results.resize(n_layers);
+  size_t num_neighbors = nodes.size() * num_samples[layer];
+  NodeArray neighbors;
+  neighbors.resize(num_neighbors);
+  std::set<NodeId> set;
+  sampler.sample(graph, nodes, num_samples[layer], &neighbors, &set);
 
-  auto current = nodes;
-
-  for (size_t i = n_layers - 1; i >= 0; i--) {
-    // sample the neighbors for this layer, nb_samples is [n_node, num_sample[i]]
-    auto nb_samples = sampler.sample(adj, current, num_samples[i]);
-    results.push_back(std::make_pair(current, nb_samples));
-
-    auto a = nb_samples.accessor<int32_t, 2>();
-    if (i > 0) {
-      // distinct nodes for the previous layers
-      std::set<int> set;
-
-      // insert nodes
-      auto a1 = current.accessor<int32_t, 1>();
-      for (int32_t i = 0; i < a1.size(0); i++)
-        set.insert(a1[i]);
-
-      // insert neighbors
-      auto a2 = nb_samples.accessor<int32_t, 2>();
-      for (int32_t i = 0; i < a2.size(0); i++)
-        for (int32_t j = 0; j < a2.size(1); j++)
-          set.insert(a2[i][j]);
-
-      size_t size = set.size();
-      // convert set to a one-dim tensor
-      current = torch::empty({static_cast<int64_t>(size)}, TensorOptions().dtype(kInt32));
-      auto b = current.accessor<int32_t, 1>();
-      int32_t idx = 0;
-      for (auto n : set)
-        b[idx++] = n;
-    }
+  if (layer > 0) {
+    // Compute the output of its neighbors and self
+    NodeArray first_order;
+    first_order.resize(set.size());
+    size_t idx = 0;
+    for (auto node : set)
+      first_order[idx++] = node;
+    auto output = ComputeOutput(first_order, layer - 1);
+    SparseNodeEmbedding embedding(first_order, output);
+    return layers[layer]->Forward(nodes, neighbors, embedding, num_samples[layer]);
+  } else {
+    // use the input embeddings
+    const SparseNodeEmbedding &embedding = graph.GetInputEmbedding();
+    return layers[layer]->Forward(nodes, neighbors, embedding, num_samples[layer]);
   }
-
-  return results;
 }
 
-Tensor UnSupervisedGraphsage::forward(const Tensor &nodes,
-                                      const Tensor &features,
-                                      const std::unordered_map<int32_t, int32_t> &node_to_index,
-                                      const AdjList &adj) {
-  // find supports for the input nodes
-  auto inputs = neibours(nodes, adj, sampler, num_samples);
-
-  size_t n_layers = num_samples.size();
-
-  Tensor& h = const_cast<Tensor&>(features);
-  std::unordered_map<int32_t, int32_t >& index = const_cast<std::unordered_map<int32_t, int32_t>&>(node_to_index);
-  for (size_t l = 0; l < n_layers; l++) {
-    // for each layer
-    auto input = inputs[l];
-    auto layer = layers[l];
-    auto output = layer->forward(input.first, input.second, h, index);
-    auto a = input.first.accessor<int32_t, 1>();
-
-    if (l < n_layers - 1) {
-      // build index for next layer
-      std::unordered_map<int32_t, int32_t> next_index;
-      for (size_t i = 0; i < a.size(0); i++)
-        next_index[a[i]] = i;
-      index = next_index;
-    }
-    h = output;
-  }
-
-  return h;
-}
-
-//Tensor UnSupervisedGraphsage::forward(const Tensor &nodes,
-//                                      const Tensor &features,
-//                                      const std::unordered_map<int, int> &node_to_index,
-//                                      const AdjList &adj) {
-//
-//  // Include neibours of first-order
-//  auto first = include_neibours(nodes, adj);
-//
-//  std::unordered_map<int, int> index1;
-//  int64_t n_first = first.size(0);
-//  auto accessor = first.accessor<int, 1>();
-//  for (int i = 0; i < n_first; i++)
-//    index1[accessor[i]] = i;
-//
-//  // h1 is [number_of_first, hidden_dim]
-//  auto h1 = layer1->forward(first, features, node_to_index, adj);
-//
-//  // h2 is [number_of_node, hidden_dim]
-//  auto h2 = layer2->forward(nodes, h1, index1, adj);
-//
-//  // do normalization
-//  auto norm = h2.norm(2, 1).view({h2.size(0), 1}).clamp_min(10e-15);
-//  h2 = h2.div(norm);
-//
-//  return h2;
-//}
-
-Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src,
-                                            const at::Tensor &dst,
-                                            const at::Tensor &negs) {
+torch::Tensor UnSupervisedGraphsage::PairwiseLoss(const torch::Tensor &src,
+                                                  const torch::Tensor &dst,
+                                                  const torch::Tensor &negs) {
   // src [batch_size, dim], dst [batch_size, dim], negs [batch_size, neg_num, dim]
   auto batch_size = src.size(0);
   auto dim = src.size(1);
@@ -170,7 +69,8 @@ Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src,
   return (pos_loss.sum() + neg_loss.sum()) / size;
 }
 
-Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src, const at::Tensor &dst) {
+torch::Tensor UnSupervisedGraphsage::PairwiseLoss(const torch::Tensor &src,
+                                                  const at::Tensor &dst) {
   // src [batch_size, dim], dst [batch_size, dim]
   auto batch_size = src.size(0);
   auto dim = src.size(1);
@@ -182,46 +82,44 @@ Tensor UnSupervisedGraphsage::pairwise_loss(const at::Tensor &src, const at::Ten
   return pos_loss.squeeze().mean();
 }
 
-void UnSupervisedGraphsage::save(const std::string &path,
-                                 const graph::dataset::Nodes &nodes,
-                                 const graph::dataset::AdjList &adj) {
-
-  int64_t n_node = nodes.node_to_index.size();
-  Tensor node_ids = torch::empty({n_node}, TensorOptions().dtype(kInt32));
-  auto accessor = node_ids.accessor<int, 1>();
+void UnSupervisedGraphsage::SaveOutput(const std::string &path) {
+  size_t num_node = graph.GetNumNode();
+  NodeArray nodes;
+  nodes.resize(num_node);
+  auto nodes_set = graph.GetNodeSet();
   size_t idx = 0;
-  for (auto node: nodes.node_to_index) {
-    accessor[idx++] = node.first;
-  }
+  for (auto node : nodes_set)
+    nodes[idx++] = node;
 
-  auto embeddings = forward(node_ids, nodes.features, nodes.node_to_index, adj);
+  auto output = Forward(nodes);
   FILE *f = fopen((path + "/embedding.b").c_str(), "wb");
-
-  fwrite(embeddings.data_ptr(), sizeof(float), n_node * embeddings.size(1), f);
+  fwrite(output.data_ptr(), sizeof(float), num_node * output.size(1), f);
   fclose(f);
 
   f = fopen((path + "/id_map.b").c_str(), "wb");
-
-  fwrite(node_ids.data_ptr(), sizeof(int), n_node, f);
+  fwrite(nodes.data(), sizeof(NodeId), num_node, f);
   fclose(f);
 }
 
-SupervisedGraphsage::SupervisedGraphsage(int n_class, int n_feature, int hidden_dim) :
-    UnSupervisedGraphsage(n_feature, hidden_dim) {
-  weight = register_parameter("weight", torch::rand({hidden_dim, n_class}));
-  init::xavier_uniform_(weight);
+SupervisedGraphsage::SupervisedGraphsage(
+    int32_t class_num,
+    int32_t input_dim,
+    const graph::Graph &graph,
+    const std::vector<int32_t> &output_dims,
+    const std::vector<int32_t> &num_samples,
+    const sampler::NeibourSampler &sampler)
+    : UnSupervisedGraphsage(input_dim, graph,
+        output_dims, num_samples, sampler) {
+  int32_t dim = *output_dims.cbegin();
+  weight = register_parameter("weight", torch::rand({dim, class_num}));
+  torch::nn::init::xavier_uniform_(weight);
 }
 
-Tensor SupervisedGraphsage::forward(const Tensor &nodes,
-                                    const Tensor &features,
-                                    const std::unordered_map<int, int> &node_to_index,
-                                    const AdjList &adj) {
-
-  auto h2 = UnSupervisedGraphsage::forward(nodes, features, node_to_index, adj);
-
-  // output is [number_of_node, n_class]
-  auto output = relu(h2.mm(weight));
-  return output;
+torch::Tensor SupervisedGraphsage::Forward(
+    const NodeArray& nodes) {
+  auto output = UnSupervisedGraphsage::Forward(nodes);
+  // output is [number_of_node, class_num]
+  return relu(output.mm(weight));
 }
 
 } // nn

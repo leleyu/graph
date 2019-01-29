@@ -2,50 +2,44 @@
 // Created by leleyu on 19-1-16.
 //
 
+#include <algorithm>
+
 #include <graph/sampler.h>
 
 namespace graph {
 namespace sampler {
 
-using namespace torch;
-using namespace graph::dataset;
-
-Tensor UniformSampler::sample(const graph::Graph &graph,
-                              const NodeArray &nodes,
-                              size_t num_sample) const {
+void UniformSampler::sample(const graph::Graph &graph,
+                            const NodeArray &nodes,
+                            size_t num_sample,
+                            NodeArray* neighbors,
+                            std::set<NodeId>* set) const {
   size_t num_node = nodes.size();
+  for (size_t i = 0; i < num_node; i++) {
+    NodeId node = nodes[i];
+    set->insert(node);
+    size_t start = i * num_sample;
+    size_t degree = graph.GetDegree(node);
+    if (degree != 0) {
+      // has neighbor
+      NodeId *ptr = const_cast<graph::Graph &>(graph).GetNeighborPtr(node);
+      // WARN: the follow code will shuffle the order of neighbors.
+      if (degree > num_sample)
+        // more neighbors, shuffle
+        std::random_shuffle(ptr, ptr + degree);
 
-  auto neighbors = torch::zeros({static_cast<int64_t>(num_node),
-                                 static_cast<int64_t>(num_sample)},
-                                     TensorOptions().dtype(kInt32));
-
-  TensorOptions().dtype(kI32);
-  auto an = neighbors.accessor<int, 2>();
-  for (int i = 0; i < an.size(0); i ++)
-    for (int j = 0; j < an.size(1); j ++)
-      an[i][j] = -1;
-
-
-  for (size_t i = 0; i < num_node; i ++) {
-    int node = a[i];
-    if (graph.GetDegree(node))
-    auto it = adj.src_to_index.find(node);
-    if (it != adj.src_to_index.end()) {
-      int idx = it->second;
-      int n_neibors = adj.starts[idx+1] - adj.starts[idx];
-      if (n_neibors <= num_sample) {
-        // directly copy
-        for (int j = 0; j < n_neibors; j ++)
-          an[i][j] = adj.dsts[adj.starts[idx]+j];
-      } else {
-        // shuffle and take the first num_sample elements
-        std::random_shuffle(&dsts[adj.starts[idx]], &dsts[adj.starts[idx+1]]);
-        for (int j = 0; j < num_sample;j ++)
-          an[i][j] = adj.dsts[adj.starts[idx]+j];
+      // copy first min(num_sample, degree) element
+      size_t len = std::min(num_sample, degree);
+      for (size_t j = 0; j < len; j++) {
+        (*neighbors)[start + j] = ptr[j];
+        set->insert(ptr[j]);
       }
+
+      // set the left as NAN_NODE_ID if need
+      for (size_t j = len; j < num_sample; j++)
+        (*neighbors)[start + j] = NAN_NODE_ID;
     }
   }
-  return neibors;
 }
 
 
