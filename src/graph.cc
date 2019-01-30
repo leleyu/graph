@@ -55,7 +55,7 @@ size_t UndirectedGraph::GetDegree(NodeId node) const {
     return 0;
 }
 
-NodeId* UndirectedGraph::GetNeighborPtr(NodeId node) {
+NodeId *UndirectedGraph::GetNeighborPtr(NodeId node) {
   auto it = adj_.lookup_table.find(node);
   if (it != adj_.lookup_table.end()) {
     int32_t index = it->second;
@@ -64,7 +64,48 @@ NodeId* UndirectedGraph::GetNeighborPtr(NodeId node) {
     return nullptr;
 }
 
+void LoadGraph(const std::string &path, Graph *graph) {
+  std::ifstream in(path);
+  std::string line, c;
 
+  while (getline(in, line)) {
+    std::istringstream is(line);
+    // src
+    getline(is, c, ' ');
+    NodeId src = std::stoi(c);
+    // dst
+    getline(is, c, ' ');
+    NodeId dst = std::stoi(c);
+
+    graph->AddEdge(src, dst);
+  }
+
+  graph->Build();
+}
+
+void LoadSparseNodeEmbedding(const std::string &path,
+                             SparseNodeEmbedding *embedding) {
+  std::ifstream in(path);
+  std::string line, c;
+
+  int64_t dim = embedding->GetDim();
+
+  while (getline(in, line)) {
+    std::istringstream is(line);
+    // NodeId
+    getline(is, c, ' ');
+    NodeId node_id = std::stoi(c);
+
+    auto f = torch::empty({dim});
+    // feature
+    while (getline(is, c, ' ')) {
+      auto index = std::stoi(c);
+      f[index] = 1.0f;
+    }
+
+    embedding->insert(node_id, f);
+  }
+}
 
 
 }; // namespace graph

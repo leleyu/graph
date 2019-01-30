@@ -3,18 +3,7 @@
 //
 
 #include <graph/graphsage.h>
-#include <graph/model.h>
 #include <graph/metric.h>
-
-using namespace torch;
-using namespace torch::data;
-using namespace torch::data::datasets;
-using namespace torch::data::samplers;
-using namespace torch::optim;
-using namespace graph::dataset;
-using namespace graph::nn;
-using namespace graph::metric;
-using namespace graph::model;
 
 UnSupervisedGraphsage train(const AdjList& adj,
     const Nodes& nodes, const Edges& edges,
