@@ -6,9 +6,10 @@
 
 namespace graph {
 
-void UndirectedGraph::Build() {
+void DirectedGraph::Build() {
   std::unordered_map<NodeId, int32_t> degree;
   size_t num_edge = edges_.srcs.size();
+
   for (size_t i = 0; i < num_edge; i++) {
     auto it = degree.find(edges_.srcs[i]);
     if (it != degree.end())
@@ -20,7 +21,6 @@ void UndirectedGraph::Build() {
   size_t num_node = degree.size();
   adj_.starts.resize(num_node + 1);
   adj_.neighbors.resize(num_edge);
-
   adj_.starts[0] = 0;
 
   for (size_t i = 0; i < num_edge; i++) {
@@ -34,7 +34,7 @@ void UndirectedGraph::Build() {
     else {
       int32_t num = adj_.lookup_table.size();
       adj_.lookup_table[src] = num;
-      adj_.starts[num] = adj_.starts[num - 1] + degree[src];
+      adj_.starts[num + 1] = adj_.starts[num] + degree[src];
       start = adj_.starts[num];
     }
 
@@ -46,7 +46,7 @@ void UndirectedGraph::Build() {
 }
 
 
-size_t UndirectedGraph::GetDegree(NodeId node) const {
+size_t DirectedGraph::GetOutDegree(NodeId node) const {
   auto it = adj_.lookup_table.find(node);
   if (it != adj_.lookup_table.end()) {
     int32_t index = it->second;
@@ -55,11 +55,11 @@ size_t UndirectedGraph::GetDegree(NodeId node) const {
     return 0;
 }
 
-NodeId *UndirectedGraph::GetNeighborPtr(NodeId node) {
+NodeId *DirectedGraph::GetOutNeighborPtr(NodeId node) {
   auto it = adj_.lookup_table.find(node);
   if (it != adj_.lookup_table.end()) {
     int32_t index = it->second;
-    return &adj_.starts[index];
+    return &adj_.neighbors[adj_.starts[index]];
   } else
     return nullptr;
 }
@@ -79,8 +79,6 @@ void LoadGraph(const std::string &path, Graph *graph) {
 
     graph->AddEdge(src, dst);
   }
-
-  graph->Build();
 }
 
 void LoadSparseNodeEmbedding(const std::string &path,
@@ -104,6 +102,25 @@ void LoadSparseNodeEmbedding(const std::string &path,
     }
 
     embedding->insert(node_id, f);
+  }
+}
+
+void LoadNodeLabels(const std::string &path,
+                    NodeLabels *labels) {
+  std::ifstream in(path);
+  std::string line, c;
+
+  while (getline(in, line)) {
+    std::istringstream is(line);
+    // NodeId
+    getline(is, c, ' ');
+    NodeId node_id = std::stoi(c);
+
+    // label
+    getline(is, c, ' ');
+    Label label = std::stoi(c);
+
+    labels->insert(std::make_pair(node_id, label));
   }
 }
 

@@ -13,7 +13,7 @@ namespace nn {
 
 class UnSupervisedGraphsage : public torch::nn::Module {
  public:
-  UnSupervisedGraphsage(int32_t input_dim,
+  UnSupervisedGraphsage(int64_t input_dim,
                         const graph::Graph &graph,
                         const std::vector<int32_t> &output_dims,
                         const std::vector<int32_t> &num_samples,
@@ -50,7 +50,7 @@ class UnSupervisedGraphsage : public torch::nn::Module {
 class SupervisedGraphsage : public UnSupervisedGraphsage {
  public:
   SupervisedGraphsage(int32_t class_num,
-                      int32_t input_dim,
+                      int64_t input_dim,
                       const graph::Graph &graph,
                       const std::vector<int32_t> &output_dims,
                       const std::vector<int32_t> &num_samples,

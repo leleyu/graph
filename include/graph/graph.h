@@ -17,10 +17,12 @@ namespace graph {
 #define NAN_NODE_ID -1
 
 typedef int32_t NodeId;
+typedef int32_t Label;
 typedef std::unordered_map<NodeId, int32_t> IndexLookupTable;
 typedef std::vector<int32_t> IndexArray;
 typedef std::vector<NodeId> NodeArray;
 typedef std::set<NodeId> NodeSet;
+typedef std::unordered_map<NodeId, Label> NodeLabels;
 
 struct AdjList {
   IndexArray starts;
@@ -74,9 +76,9 @@ class SparseNodeEmbedding {
 
 
 // Undirected Graph
-class UndirectedGraph {
+class DirectedGraph {
  public:
-  UndirectedGraph(const SparseNodeEmbedding &embedding)
+  DirectedGraph(const SparseNodeEmbedding &embedding)
       : input_embeddings_(embedding) {}
 
   inline void AddEdge(NodeId src, NodeId dst) {
@@ -94,7 +96,7 @@ class UndirectedGraph {
   void Build();
 
   // Methods for graph accessing
-  size_t GetDegree(NodeId node) const;
+  size_t GetOutDegree(NodeId node) const;
 
   const SparseNodeEmbedding &GetInputEmbedding() const {
     return input_embeddings_;
@@ -116,7 +118,7 @@ class UndirectedGraph {
     return nodes_.find(node) != nodes_.end();
   }
 
-  NodeId *GetNeighborPtr(NodeId node);
+  NodeId *GetOutNeighborPtr(NodeId node);
 
  private:
   AdjList adj_;
@@ -126,12 +128,31 @@ class UndirectedGraph {
 
 };
 
-typedef UndirectedGraph Graph;
+typedef DirectedGraph Graph;
+
+class NodeDataset : torch::data::datasets::Dataset<NodeDataset, NodeId> {
+ public:
+  NodeDataset(const NodeArray &nodes, size_t size) : nodes(nodes), num(size) {}
+
+  NodeId get(size_t index) override {
+    return nodes[index];
+  }
+
+  torch::optional<size_t> size() const override {
+    return num;
+  }
+
+ private:
+  const NodeArray &nodes;
+  size_t num;
+};
 
 void LoadGraph(const std::string &path, Graph *graph);
 
 void LoadSparseNodeEmbedding(const std::string &path,
                              SparseNodeEmbedding *embedding);
+
+void LoadNodeLabels(const std::string &path, NodeLabels* labels);
 } // namespace graph
 
 #endif //GRAPH_GRAPH_H

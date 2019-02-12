@@ -4,7 +4,7 @@ namespace graph {
 namespace nn {
 
 UnSupervisedGraphsage::UnSupervisedGraphsage(
-    int32_t input_dim,
+    int64_t input_dim,
     const graph::Graph &graph,
     const std::vector<int32_t> &output_dims,
     const std::vector<int32_t> &num_samples,
@@ -103,20 +103,20 @@ void UnSupervisedGraphsage::SaveOutput(const std::string &path) {
 
 SupervisedGraphsage::SupervisedGraphsage(
     int32_t class_num,
-    int32_t input_dim,
+    int64_t input_dim,
     const graph::Graph &graph,
     const std::vector<int32_t> &output_dims,
     const std::vector<int32_t> &num_samples,
     const sampler::NeibourSampler &sampler)
     : UnSupervisedGraphsage(input_dim, graph,
-        output_dims, num_samples, sampler) {
+                            output_dims, num_samples, sampler) {
   int32_t dim = *output_dims.cbegin();
   weight = register_parameter("weight", torch::rand({dim, class_num}));
   torch::nn::init::xavier_uniform_(weight);
 }
 
 torch::Tensor SupervisedGraphsage::Forward(
-    const NodeArray& nodes) {
+    const NodeArray &nodes) {
   auto output = UnSupervisedGraphsage::Forward(nodes);
   // output is [number_of_node, class_num]
   return relu(output.mm(weight));

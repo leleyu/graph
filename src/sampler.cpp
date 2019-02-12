@@ -19,10 +19,10 @@ void UniformSampler::sample(const graph::Graph &graph,
     NodeId node = nodes[i];
     set->insert(node);
     size_t start = i * num_sample;
-    size_t degree = graph.GetDegree(node);
+    size_t degree = graph.GetOutDegree(node);
     if (degree != 0) {
       // has neighbor
-      NodeId *ptr = const_cast<graph::Graph &>(graph).GetNeighborPtr(node);
+      NodeId *ptr = const_cast<graph::Graph &>(graph).GetOutNeighborPtr(node);
       // WARN: the follow code will shuffle the order of neighbors.
       if (degree > num_sample)
         // more neighbors, shuffle
