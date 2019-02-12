@@ -125,13 +125,11 @@ class DirectedGraph {
   EdgeInfo edges_;
   NodeSet nodes_;
   const SparseNodeEmbedding &input_embeddings_;
-
 };
 
 typedef DirectedGraph Graph;
 
-class NodeDataset : torch::data::datasets::Dataset<NodeDataset, NodeId> {
- public:
+struct NodeDataset : torch::data::datasets::Dataset<NodeDataset, NodeId> {
   NodeDataset(const NodeArray &nodes, size_t size) : nodes(nodes), num(size) {}
 
   NodeId get(size_t index) override {
@@ -141,8 +139,7 @@ class NodeDataset : torch::data::datasets::Dataset<NodeDataset, NodeId> {
   torch::optional<size_t> size() const override {
     return num;
   }
-
- private:
+  
   const NodeArray &nodes;
   size_t num;
 };
@@ -152,7 +149,10 @@ void LoadGraph(const std::string &path, Graph *graph);
 void LoadSparseNodeEmbedding(const std::string &path,
                              SparseNodeEmbedding *embedding);
 
-void LoadNodeLabels(const std::string &path, NodeLabels* labels);
+void LoadNodeLabels(const std::string &path, NodeLabels *labels);
+
+torch::Tensor LookupLabels(const NodeArray &nodes,
+                           const NodeLabels &labels);
 } // namespace graph
 
 #endif //GRAPH_GRAPH_H
