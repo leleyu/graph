@@ -17,13 +17,13 @@ set(HEADER include/graph/dataset.h
 
 set(SRC src/dataset.cpp
         src/layer.cpp
-        src/graphsage.cpp
-        src/metric.cpp
-        src/sampler.cpp
+        src/graphsage.cc
+        src/metric.cc
+        src/sampler.cc
         src/graph.cc)
 
-add_executable(supervised src/supervised.cpp ${HEADER} ${SRC})
-add_executable(unsupervised src/unsupervised.cpp ${HEADER} ${SRC})
+add_executable(supervised src/supervised.cc ${HEADER} ${SRC})
+add_executable(unsupervised src/unsupervised.cc ${HEADER} ${SRC})
 
 target_link_libraries(supervised ${TORCH_LIBRARIES})
 target_link_libraries(unsupervised ${TORCH_LIBRARIES})

@@ -40,7 +40,7 @@ class UnSupervisedGraphsage : public torch::nn::Module {
   void SaveOutput(const std::string &path);
 
   // Two layers with mean aggregate
-  std::vector<graph::nn::Mean0> layers;
+  std::vector<graph::nn::Mean> layers;
   const sampler::NeibourSampler& sampler;
   const std::vector<int32_t> num_samples;
   const graph::Graph &graph;

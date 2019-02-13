@@ -12,7 +12,7 @@ UnSupervisedGraphsage::UnSupervisedGraphsage(
     : graph(graph), sampler(sampler), num_samples(num_samples) {
   size_t n_layers = output_dims.size();
   for (size_t i = 0; i < n_layers; i++) {
-    layers.push_back(register_module("layer" + std::to_string(i), graph::nn::Mean0(input_dim, output_dims[i])));
+    layers.push_back(register_module("layer" + std::to_string(i), graph::nn::Mean(input_dim, output_dims[i])));
     input_dim = output_dims[i];
   }
 
