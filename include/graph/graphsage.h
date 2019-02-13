@@ -41,8 +41,8 @@ class UnSupervisedGraphsage : public torch::nn::Module {
 
   // Two layers with mean aggregate
   std::vector<graph::nn::Mean0> layers;
-  const sampler::NeibourSampler &sampler;
-  const std::vector<int32_t> &num_samples;
+  const sampler::NeibourSampler& sampler;
+  const std::vector<int32_t> num_samples;
   const graph::Graph &graph;
 };
 

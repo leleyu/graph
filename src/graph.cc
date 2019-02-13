@@ -94,7 +94,7 @@ void LoadSparseNodeEmbedding(const std::string &path,
     getline(is, c, ' ');
     NodeId node_id = std::stoi(c);
 
-    auto f = torch::empty({dim});
+    auto f = torch::zeros({dim});
     // feature
     while (getline(is, c, ' ')) {
       auto index = std::stoi(c);
@@ -124,8 +124,8 @@ void LoadNodeLabels(const std::string &path,
   }
 }
 
-torch::Tensor LookupLabels(const NodeArray& nodes,
-    const NodeLabels& labels) {
+torch::Tensor LookupLabels(const NodeArray &nodes,
+                           const NodeLabels &labels) {
   int64_t size = static_cast<int64_t >(nodes.size());
   auto tensor = torch::empty({size}, torch::TensorOptions().dtype(torch::kInt64));
   auto f = tensor.accessor<int64_t, 1>();

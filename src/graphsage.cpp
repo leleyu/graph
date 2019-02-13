@@ -15,6 +15,8 @@ UnSupervisedGraphsage::UnSupervisedGraphsage(
     layers.push_back(register_module("layer" + std::to_string(i), graph::nn::Mean0(input_dim, output_dims[i])));
     input_dim = output_dims[i];
   }
+
+//  std::cout << "num_sample " << UnSupervisedGraphsage::num_samples << std::endl;
 }
 
 torch::Tensor UnSupervisedGraphsage::Forward(const NodeArray &nodes) {
@@ -40,8 +42,10 @@ torch::Tensor UnSupervisedGraphsage::ComputeOutput(const NodeArray &nodes,
     NodeArray first_order;
     first_order.resize(set.size());
     size_t idx = 0;
+
     for (auto node : set)
       first_order[idx++] = node;
+
     auto output = ComputeOutput(first_order, layer - 1);
     SparseNodeEmbedding embedding(first_order, output);
     return layers[layer]->Forward(nodes, neighbors, embedding, num_samples[layer]);
@@ -110,7 +114,7 @@ SupervisedGraphsage::SupervisedGraphsage(
     const sampler::NeibourSampler &sampler)
     : UnSupervisedGraphsage(input_dim, graph,
                             output_dims, num_samples, sampler) {
-  int32_t dim = *output_dims.cbegin();
+  int32_t dim = *output_dims.rbegin();
   weight = register_parameter("weight", torch::rand({dim, class_num}));
   torch::nn::init::xavier_uniform_(weight);
 }
@@ -118,6 +122,7 @@ SupervisedGraphsage::SupervisedGraphsage(
 torch::Tensor SupervisedGraphsage::Forward(
     const NodeArray &nodes) {
   auto output = UnSupervisedGraphsage::Forward(nodes);
+
   // output is [number_of_node, class_num]
   return relu(output.mm(weight));
 }

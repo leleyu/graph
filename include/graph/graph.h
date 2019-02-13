@@ -38,7 +38,7 @@ struct EdgeInfo {
 class SparseNodeEmbedding {
  public:
   SparseNodeEmbedding(int64_t num_node, int64_t dim) {
-    data_ = torch::empty({num_node, dim});
+    data_ = torch::zeros({num_node, dim});
   }
 
   SparseNodeEmbedding(const NodeArray &nodes, const torch::Tensor &embedding) {
@@ -54,7 +54,11 @@ class SparseNodeEmbedding {
   }
 
   inline torch::Tensor lookup(NodeId node) const {
-    return data_[table_.find(node)->second];
+    auto it = table_.find(node);
+    if (it == table_.end())
+      std::cout << "cannot find embedding for node " << node << std::endl;
+    assert(it != table_.end());
+    return data_[it->second];
   }
 
   torch::Tensor lookup(const NodeArray &nodes) const {
@@ -75,10 +79,10 @@ class SparseNodeEmbedding {
 };
 
 
-// Undirected Graph
+// Directed Graph
 class DirectedGraph {
  public:
-  DirectedGraph(const SparseNodeEmbedding &embedding)
+  explicit DirectedGraph(const SparseNodeEmbedding &embedding)
       : input_embeddings_(embedding) {}
 
   inline void AddEdge(NodeId src, NodeId dst) {
@@ -139,17 +143,19 @@ struct NodeDataset : torch::data::datasets::Dataset<NodeDataset, NodeId> {
   torch::optional<size_t> size() const override {
     return num;
   }
-  
+
   const NodeArray &nodes;
   size_t num;
 };
 
-void LoadGraph(const std::string &path, Graph *graph);
+void LoadGraph(const std::string &path,
+               Graph *graph);
 
 void LoadSparseNodeEmbedding(const std::string &path,
                              SparseNodeEmbedding *embedding);
 
-void LoadNodeLabels(const std::string &path, NodeLabels *labels);
+void LoadNodeLabels(const std::string &path,
+                    NodeLabels *labels);
 
 torch::Tensor LookupLabels(const NodeArray &nodes,
                            const NodeLabels &labels);

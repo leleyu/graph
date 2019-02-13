@@ -100,6 +100,7 @@ torch::Tensor Mean0Impl::Forward(
     const size_t num_sample) {
   int64_t num_node = static_cast<int64_t>(nodes.size());
   int64_t dim = embedding.GetDim();
+  assert (dim == options.in_);
 
   // combine is [batch_size x 2 x dim]
   auto combine = torch::zeros({num_node, 2, dim});
@@ -118,7 +119,8 @@ torch::Tensor Mean0Impl::Forward(
         cnt++;
       }
     }
-    f.div_(cnt);
+    if (cnt > 0)
+      f.div_(cnt);
   }
 
   combine = combine.view({num_node, 2 * dim});
