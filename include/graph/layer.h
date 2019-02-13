@@ -10,7 +10,6 @@
 #include <torch/nn/pimpl.h>
 #include <torch/types.h>
 
-#include <graph/dataset.h>
 #include <graph/sampler.h>
 
 namespace graph {
@@ -37,7 +36,7 @@ class MeanImpl : public torch::nn::Cloneable<MeanImpl> {
 
   void reset() override;
 
-  /// The learned weight with dim [in, out]
+  /// The learned weight with dim [in * 2, out]
   torch::Tensor weight;
 
   MeanOptions options;

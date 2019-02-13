@@ -101,7 +101,7 @@ void LoadSparseNodeEmbedding(const std::string &path,
       f[index] = 1.0f;
     }
 
-    embedding->insert(node_id, f);
+    embedding->Insert(node_id, f);
   }
 }
 

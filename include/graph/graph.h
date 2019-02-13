@@ -47,13 +47,29 @@ class SparseNodeEmbedding {
       table_[nodes[i]] = static_cast<int32_t>(i);
   }
 
-  void insert(NodeId node, torch::Tensor feature) {
+  void RandomInit(const NodeArray &nodes) {
+    assert(nodes.size() == data_.size(0));
+    for (int32_t i = 0; i < nodes.size(); i++) {
+      table_[nodes[i]] = i;
+    }
+    torch::nn::init::xavier_uniform_(data_);
+  }
+
+  void RandomInit(const NodeSet &nodes) {
+    assert(nodes.size() == data_.size(0));
+    int32_t idx = 0;
+    for (auto node : nodes)
+      table_[node] = idx++;
+    torch::nn::init::xavier_uniform_(data_);
+  }
+
+  void Insert(NodeId node, torch::Tensor feature) {
     int32_t index = static_cast<int32_t>(table_.size());
     table_[node] = index;
     data_[index] = feature;
   }
 
-  inline torch::Tensor lookup(NodeId node) const {
+  inline torch::Tensor Lookup(NodeId node) const {
     auto it = table_.find(node);
     if (it == table_.end())
       std::cout << "cannot find embedding for node " << node << std::endl;
@@ -61,11 +77,11 @@ class SparseNodeEmbedding {
     return data_[it->second];
   }
 
-  torch::Tensor lookup(const NodeArray &nodes) const {
+  torch::Tensor Lookup(const NodeArray &nodes) const {
     auto result = torch::empty({static_cast<int64_t>(nodes.size()),
                                 data_.size(1)});
     for (size_t i = 0; i < nodes.size(); i++)
-      result[i] = lookup(nodes[i]);
+      result[i] = Lookup(nodes[i]);
     return result;
   }
 
@@ -114,7 +130,11 @@ class DirectedGraph {
     return nodes_;
   }
 
-  size_t GetNumEdge() {
+  const EdgeInfo &GetEdgeInfo() const {
+    return edges_;
+  }
+
+  size_t GetNumEdge() const {
     return edges_.srcs.size();
   }
 
@@ -146,6 +166,32 @@ struct NodeDataset : torch::data::datasets::Dataset<NodeDataset, NodeId> {
 
   const NodeArray &nodes;
   size_t num;
+};
+
+struct EdgeDataset : torch::data::datasets::Dataset<EdgeDataset, NodeId> {
+  EdgeDataset(const EdgeInfo& edges): edges(edges) {}
+
+  NodeId get(size_t index) override {
+    return NAN_NODE_ID;
+  }
+
+  std::vector<NodeId> get_batch(torch::ArrayRef<size_t> indices) override {
+    int64_t size = static_cast<int64_t >(indices.size());
+    std::vector<NodeId> batch;
+    batch.resize(size * 2);
+    for (size_t i = 0; i < size; i++) {
+      size_t index = indices[i];
+      batch[i] = edges.srcs[index];
+      batch[i + size] = edges.dsts[index];
+    }
+    return batch;
+  }
+
+  torch::optional<size_t> size() const override {
+    return edges.srcs.size();
+  }
+
+  const EdgeInfo& edges;
 };
 
 void LoadGraph(const std::string &path,

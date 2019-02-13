@@ -13,7 +13,7 @@ void TrainSupervisedGraphSage(graph::nn::SupervisedGraphsage *net,
   auto dataset = graph::NodeDataset(train, train.size());
   auto options = torch::data::DataLoaderOptions(batch_size);
   auto sampler = torch::data::samplers::RandomSampler(dataset.size().value());
-  auto loader = make_data_loader(dataset, options, sampler);
+  auto loader  = torch::data::make_data_loader(dataset, options, sampler);
 
   torch::optim::SGD optim(net->parameters(), 0.01);
 

@@ -16,7 +16,7 @@ set(HEADER include/graph/dataset.h
         include/graph/graph.h)
 
 set(SRC src/dataset.cpp
-        src/layer.cpp
+        src/layer.cc
         src/graphsage.cc
         src/metric.cc
         src/sampler.cc
