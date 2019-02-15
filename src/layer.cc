@@ -6,18 +6,19 @@ namespace nn {
 
 MeanOptions::MeanOptions(int in, int out) : in_(in), out_(out) {}
 
-
 torch::Tensor MeanImpl::Forward(
     const NodeArray &nodes,
     const NodeArray &neighbors,
     const SparseNodeEmbedding &embedding,
     const size_t num_sample) {
-  int64_t num_node = static_cast<int64_t>(nodes.size());
+  auto num_node = static_cast<int64_t>(nodes.size());
   int64_t dim = embedding.GetDim();
   assert (dim == options.in_);
 
   // combine is [batch_size x 2 x dim]
   auto combine = torch::zeros({num_node, 2, dim});
+//  combine.set_requires_grad(false);
+
 
   for (size_t i = 0; i < num_node; i++)
     combine[i][0] = embedding.Lookup(nodes[i]);

@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_PREFIX_PATH "/Users/leleyu/software/libtorch")
 
 find_package(Torch REQUIRED)
+find_package(OpenMP)
 
 include_directories("include/")
 
@@ -13,7 +14,8 @@ set(HEADER include/graph/dataset.h
         include/graph/metric.h
         include/graph/graphsage.h
         include/graph/sampler.h
-        include/graph/graph.h)
+        include/graph/graph.h
+        include/graph/preprocessing.h)
 
 set(SRC src/dataset.cpp
         src/layer.cc
@@ -25,5 +27,5 @@ set(SRC src/dataset.cpp
 add_executable(supervised src/supervised.cc ${HEADER} ${SRC})
 add_executable(unsupervised src/unsupervised.cc ${HEADER} ${SRC})
 
-target_link_libraries(supervised ${TORCH_LIBRARIES})
-target_link_libraries(unsupervised ${TORCH_LIBRARIES})
+target_link_libraries(supervised ${TORCH_LIBRARIES} OpenMP::OpenMP_CXX)
+target_link_libraries(unsupervised ${TORCH_LIBRARIES} OpenMP::OpenMP_CXX)

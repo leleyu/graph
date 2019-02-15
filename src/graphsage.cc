@@ -15,8 +15,6 @@ UnSupervisedGraphsage::UnSupervisedGraphsage(
     layers.push_back(register_module("layer" + std::to_string(i), graph::nn::Mean(input_dim, output_dims[i])));
     input_dim = output_dims[i];
   }
-
-//  std::cout << "num_sample " << UnSupervisedGraphsage::num_samples << std::endl;
 }
 
 torch::Tensor UnSupervisedGraphsage::Forward(const NodeArray &nodes) {
@@ -117,6 +115,16 @@ SupervisedGraphsage::SupervisedGraphsage(
   int32_t dim = *output_dims.rbegin();
   weight = register_parameter("weight", torch::rand({dim, class_num}));
   torch::nn::init::xavier_uniform_(weight);
+}
+
+torch::Tensor SupervisedGraphsage::SingleOutputLoss(torch::Tensor y_pred, torch::Tensor y_true) {
+  return torch::nll_loss(log_softmax(y_pred, 1), y_true);
+}
+
+torch::Tensor SupervisedGraphsage::MultiOutputLoss(torch::Tensor y_pred, torch::Tensor y_true) {
+  auto loss =  -y_true * torch::log_sigmoid(y_pred) + (1 - y_true) * torch::log_sigmoid(-y_pred);
+  loss = loss.sum(1) / y_pred.size(1);
+  return loss.mean();
 }
 
 torch::Tensor SupervisedGraphsage::Forward(
