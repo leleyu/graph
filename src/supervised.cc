@@ -16,8 +16,8 @@ void TrainSupervisedGraphSage(graph::nn::SupervisedGraphsage *net,
   auto sampler = torch::data::samplers::RandomSampler(dataset.size().value());
   auto loader  = torch::data::make_data_loader(dataset, options, sampler);
 
-  torch::optim::SGD optim(net->parameters(), 0.001);
-  
+  torch::optim::SGD optim(net->parameters(), 0.1);
+
   for (size_t epoch = 1; epoch <= num_epoch; epoch++) {
     size_t total_right = 0;
     size_t batch_index = 0;
@@ -70,7 +70,7 @@ void RunSupervisedGraphSage(const graph::Graph& graph,
 
   srand(time(NULL));
   for (auto node: nodes) {
-    if (static_cast<float>(rand()) / static_cast<float>(RAND_MAX) < 0.2)
+    if (static_cast<float>(rand()) / static_cast<float>(RAND_MAX) < 0.3)
       train.push_back(node);
     else
       validate.push_back(node);
@@ -129,8 +129,8 @@ void RunBlogCatalog() {
 }
 
 int main() {
-//  RunCora();
-  RunBlogCatalog();
+  RunCora();
+//  RunBlogCatalog();
 //  test_speed();
   return 0;
 }
