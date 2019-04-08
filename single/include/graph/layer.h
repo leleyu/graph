@@ -10,7 +10,7 @@
 #include <torch/nn/pimpl.h>
 #include <torch/types.h>
 
-#include <graph/sampler.h>
+#include "sampler.h"
 
 namespace graph {
 namespace nn {

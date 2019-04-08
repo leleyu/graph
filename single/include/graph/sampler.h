@@ -7,8 +7,8 @@
 
 #include <torch/torch.h>
 
-#include <graph/dataset.h>
-#include <graph/graph.h>
+#include "dataset.h"
+#include "graph.h"
 
 namespace graph {
 namespace sampler {

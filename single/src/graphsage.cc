@@ -28,8 +28,9 @@ torch::Tensor UnSupervisedGraphsage::Forward(const NodeArray &nodes) {
   return output.div(norm);
 }
 
-torch::Tensor UnSupervisedGraphsage::ComputeOutput(const NodeArray &nodes,
-                                                   int layer) {
+torch::Tensor
+UnSupervisedGraphsage::ComputeOutput(const NodeArray &nodes,
+  int layer) {
 
   size_t num_neighbors = nodes.size() * num_samples[layer];
   NodeArray neighbors;

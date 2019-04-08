@@ -5,7 +5,7 @@
 #ifndef GRAPH_GRAPHSAGE_H
 #define GRAPH_GRAPHSAGE_H
 
-#include <graph/layer.h>
+#include "layer.h"
 
 
 namespace graph {

@@ -19,12 +19,12 @@ void TrainSupervisedGraphSage(graph::nn::SupervisedGraphsage *net,
 
   for (size_t epoch = 1; epoch <= num_epoch; epoch++) {
     size_t total_right = 0;
-    for (auto batch : *loader) {
+    for (auto const& batch : *loader) {
       auto y_pred = net->Forward(batch);
       auto y_true = graph::LookupLabels(batch, labels);
       auto loss = torch::nll_loss(log_softmax(y_pred, 1), y_true);
       auto batch_right = graph::metric::PrecisionScore(y_pred, y_true) * y_pred.size(0);
-      total_right += batch_right;
+      total_right += static_cast<long>(batch_right);
       loss.backward();
       optim.step();
     }
