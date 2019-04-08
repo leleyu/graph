@@ -58,6 +58,10 @@ class SupervisedGraphsage : public UnSupervisedGraphsage {
 
   torch::Tensor Forward(const NodeArray& nodes) override;
 
+  torch::Tensor MultiOutputLoss(torch::Tensor y_pred, torch::Tensor y_true);
+
+  torch::Tensor SingleOutputLoss(torch::Tensor y_pred, torch::Tensor y_true);
+
   // The learned weight with dim [hidden_dim, n_class]
   torch::Tensor weight;
 };

@@ -12,6 +12,20 @@
 
 #include <torch/torch.h>
 
+#define TIMER_START(_X) \
+  auto _X##_start = std::chrono::steady_clock::now(), _X##_stop = _X##_start
+#define TIMER_STOP(_X)  \
+  _X##_stop = std::chrono::steady_clock::now()
+#define TIMER_NSEC(_X) \
+  std::chrono::duration_cast<std::chrono::nanoseconds>(_X##_stop - _X##_start).count()
+#define TIMER_USEC(_X) \
+  std::chrono::duration_cast<std::chrono::microseconds>(_X##_stop - _X##_start).count()
+#define TIMER_MSEC(_X) \
+  0.000001 * TIMER_NSEC(_X)
+#define TIMER_SEC(_X) \
+  0.000001 * TIMER_USEC(_X)
+
+
 namespace graph {
 
 #define NAN_NODE_ID -1
@@ -39,6 +53,7 @@ class SparseNodeEmbedding {
  public:
   SparseNodeEmbedding(int64_t num_node, int64_t dim) {
     data_ = torch::zeros({num_node, dim});
+    data_.set_requires_grad(false);
   }
 
   SparseNodeEmbedding(const NodeArray &nodes, const torch::Tensor &embedding) {
@@ -64,9 +79,9 @@ class SparseNodeEmbedding {
   }
 
   void Insert(NodeId node, torch::Tensor feature) {
-    int32_t index = static_cast<int32_t>(table_.size());
+    auto index = static_cast<int32_t>(table_.size());
     table_[node] = index;
-    data_[index] = feature;
+    data_[index] = std::move(feature);
   }
 
   inline torch::Tensor Lookup(NodeId node) const {
@@ -169,14 +184,14 @@ struct NodeDataset : torch::data::datasets::Dataset<NodeDataset, NodeId> {
 };
 
 struct EdgeDataset : torch::data::datasets::Dataset<EdgeDataset, NodeId> {
-  EdgeDataset(const EdgeInfo& edges): edges(edges) {}
+  explicit EdgeDataset(const EdgeInfo& edges): edges(edges) {}
 
   NodeId get(size_t index) override {
     return NAN_NODE_ID;
   }
 
   std::vector<NodeId> get_batch(torch::ArrayRef<size_t> indices) override {
-    int64_t size = static_cast<int64_t >(indices.size());
+    size_t size = indices.size();
     std::vector<NodeId> batch;
     batch.resize(size * 2);
     for (size_t i = 0; i < size; i++) {

@@ -126,7 +126,7 @@ void LoadNodeLabels(const std::string &path,
 
 torch::Tensor LookupLabels(const NodeArray &nodes,
                            const NodeLabels &labels) {
-  int64_t size = static_cast<int64_t >(nodes.size());
+  auto size = static_cast<int64_t >(nodes.size());
   auto tensor = torch::empty({size}, torch::TensorOptions().dtype(torch::kInt64));
   auto f = tensor.accessor<int64_t, 1>();
   for (size_t i = 0; i < size; i++)
