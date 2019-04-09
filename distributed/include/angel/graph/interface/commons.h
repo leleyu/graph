@@ -57,6 +57,6 @@
   auto* cineibors = static_cast<int32_t*>(jneibors_##cptr); \
   std::vector<int32_t> nodes(cinodes, cinodes + env->GetArrayLength(jnodes)); \
   std::vector<int32_t> neibors(cineibors, cineibors + env->GetArrayLength(jneibors)); \
-  SubGraph sub_graph(nodes, neibors, jmax_neibor);
+  angel::graph::SubGraph sub_graph(nodes, neibors, jmax_neibor);
 
 #endif //GRAPH_INTERFACE_COMMONS_H

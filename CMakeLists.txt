@@ -6,7 +6,6 @@ set(TORCH_HOME "/Users/leleyu/software/libtorch")
 set(CMAKE_PREFIX_PATH ${TORCH_HOME})
 
 find_package(Torch REQUIRED)
-find_package(OpenMP)
 
 add_subdirectory(single)
 add_subdirectory(distributed)

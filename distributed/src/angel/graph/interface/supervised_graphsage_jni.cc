@@ -6,9 +6,6 @@
 #include <angel/graph/interface/commons.h>
 #include <angel/graph/model/graphsage.h>
 
-namespace angel {
-namespace graph {
-
 /*
  * Class:     com_tencent_angel_graph_model_SupervisedGraphSage
  * Method:    backward
@@ -31,7 +28,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_SupervisedGrap
   DEFINE_PRIMITIVE_ARRAYS6(jself_embeddings, jneibor_embeddings, jbatch, jnodes, jneibors, jtargets);
 
   // model ptr
-  DEFINE_MODEL_PTR(SupervisedGraphSage, jptr);
+  DEFINE_MODEL_PTR(angel::graph::SupervisedGraphSage, jptr);
   int embedding_dim = ptr->GetDim();
 
   // embeddings
@@ -73,7 +70,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_SupervisedGrap
 /*
  * Class:     com_tencent_angel_graph_model_SupervisedGraphSage
  * Method:    initNetwork
- * Signature: (I[I)J
+ * Signature: (II[I)J
  */
 JNIEXPORT jlong JNICALL Java_com_tencent_angel_graph_model_SupervisedGraphSage_initNetwork
   (JNIEnv *env, jobject obj, jint jinput_dim, jint jnum_class, jintArray joutput_dims) {
@@ -87,12 +84,9 @@ JNIEXPORT jlong JNICALL Java_com_tencent_angel_graph_model_SupervisedGraphSage_i
   for (size_t i = 0; i < size; i ++)
     output_dims[i] = coutput_dims[i];
 
-  auto* ptr = new SupervisedGraphSage(jinput_dim, jnum_class, output_dims);
+  auto* ptr = new angel::graph::SupervisedGraphSage(jinput_dim, jnum_class, output_dims);
 
   env->ReleasePrimitiveArrayCritical(joutput_dims, coutput_dims, 0);
   return reinterpret_cast<int64_t>(ptr);
 }
-
-} // namespace graph
-} // namespace angel
 
