@@ -90,7 +90,6 @@ public class SubGraph {
 
   public SubGraph sample(int[] batch, int order, int numSample) {
     Random rand = new Random(System.currentTimeMillis());
-    IntOpenHashSet subgraph = new IntOpenHashSet();
 
     Int2IntOpenHashMap index = new Int2IntOpenHashMap();
     IntArrayList startIndex = new IntArrayList();
@@ -125,7 +124,7 @@ public class SubGraph {
     for (int i = start; i < subNeighbors.size(); i++)
       index.put(subNeighbors.getInt(i), index.size());
 
-
+    return new SubGraph(startIndex.toIntArray(), subNeighbors.toIntArray(), numSample, index);
 
   }
 }
