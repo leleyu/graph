@@ -23,6 +23,14 @@ JNIEXPORT jfloatArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_forwa
 JNIEXPORT void JNICALL Java_com_tencent_angel_graph_model_GraphSage_destroyNetwork
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     com_tencent_angel_graph_model_GraphSage
+ * Method:    getKeys
+ * Signature: (J)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_getKeys
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

@@ -54,3 +54,23 @@ JNIEXPORT void JNICALL Java_com_tencent_angel_graph_model_GraphSage_destroyNetwo
   auto* ptr = reinterpret_cast<angel::graph::SupervisedGraphSage*>(jptr);
   delete(ptr);
 }
+
+/*
+ * Class:     com_tencent_angel_graph_model_GraphSage
+ * Method:    getKeys
+ * Signature: (J)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_getKeys
+    (JNIEnv *env, jobject jobj, jlong jptr) {
+  auto* ptr = reinterpret_cast<angel::graph::SupervisedGraphSage*>(jptr);
+  std::vector<std::string> keys = ptr->keys();
+
+  jsize len = static_cast<int>(keys.size());
+  jclass stringClass = env->FindClass("java/lang/String");
+  jobjectArray strings = env->NewObjectArray(len, stringClass, env->NewStringUTF(""));
+  for (jsize i = 0; i < len; i++) {
+    env->SetObjectArrayElement(strings, i, env->NewStringUTF(keys[i].data()));
+  }
+
+  return strings;
+}

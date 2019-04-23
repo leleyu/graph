@@ -82,5 +82,15 @@ SupervisedGraphSage::Backward(const torch::Tensor &nodes,
 int32_t SupervisedGraphSage::GetDim() {
   return layers[0]->options.in();
 }
+
+std::vector<std::string> SupervisedGraphSage::keys() {
+  std::vector<std::string> keys;
+  for (auto& item: named_parameters()) {
+    auto& key = item.key();
+    keys.push_back(key);
+  }
+
+  return keys;
+}
 } // namespace graph
 } // namespace angel

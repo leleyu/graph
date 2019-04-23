@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 project(graph)
 
+
 find_package(JNI REQUIRED)
 
 include_directories(${JAVA_INCLUDE_PATH})
+include_directories(${JAVA_INCLUDE_PATH}/linux)
 include_directories("include")
 include_directories("../single/include")
 include_directories(${TORCH_HOME}/include/torch/csrc/api/include)

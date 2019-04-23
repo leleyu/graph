@@ -56,6 +56,8 @@ class SupervisedGraphSage : public torch::nn::Module {
 
   int32_t GetDim();
 
+  std::vector<std::string> keys();
+
   std::vector<Mean> layers;
   torch::Tensor weight_;
   int num_class_;

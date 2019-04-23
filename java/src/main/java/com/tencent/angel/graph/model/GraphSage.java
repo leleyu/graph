@@ -15,6 +15,10 @@ public abstract class GraphSage {
     this.outputDims = outputDims;
   }
 
+  public String[] keys() {
+    return getKeys(ptr);
+  }
+
   public void destory() {
     destroyNetwork(ptr);
   }
@@ -37,4 +41,5 @@ public abstract class GraphSage {
 
 
   private native void destroyNetwork(long ptr);
+  private native String[] getKeys(long ptr);
 }
