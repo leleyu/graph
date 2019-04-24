@@ -16,37 +16,15 @@ public class SupervisedGraphSage extends GraphSage {
   public SupervisedGraphSage(int numClass, int inputDim, int[] outputDims) {
     super(inputDim, outputDims);
     this.numClass = numClass;
-    ptr = initNetwork(inputDim, numClass, outputDims);
-    System.out.println(ptr);
+    ptr = initNetwork(inputDim, this.numClass, outputDims);
     keys = keys();
   }
 
-
-  public float[] forward(SparseNodeEmbedding selfEmbeddings,
-                         SparseNodeEmbedding neiborEmbeddings,
-                         NodeArray nodes,
-                         SubGraph subGraph,
-                         NodeIndex index) {
-    return new float[0];
-  }
-
-//  public float[] backward(SparseNodeEmbedding selfEmbeddings,
-//                          SparseNodeEmbedding neiborEmbeddings,
-//                          NodeArray nodes,
-//                          SubGraph subGraph,
-//                          NodeIndex index,
-//                          NodeArray targets) {
-//    return new float[0];
-//  }
-
-  public Map<String, float[]> backward(SparseNodeEmbedding selfEmbeddings,
-                                       SparseNodeEmbedding neighborEmbeddings,
+  public Map<String, float[]> backward(SparseNodeEmbedding inputEmbeddings,
                                        NodeArray nodes,
                                        SubGraph subGraph,
-                                       NodeIndex index,
                                        NodeArray targets) {
-    float[][] gradients = backward(ptr, selfEmbeddings.getEmbeddings(),
-       neighborEmbeddings.getEmbeddings(),
+    float[][] gradients = backward(ptr, inputEmbeddings.getEmbeddings(),
        nodes.getNodes(),
        subGraph.getMaxNeighbor(),
        subGraph.getNodes(),
@@ -62,7 +40,7 @@ public class SupervisedGraphSage extends GraphSage {
   }
 
   private native float[][] backward(long ptr, // model ptr
-                                    float[] selfEmbeddings, float[] neiborEmbeddings, // embedding vectors
+                                    float[] selfEmbeddings,// embedding vectors
                                     int[] batch, // batch of nodes
                                     // graph structure
                                     int maxNeibor,

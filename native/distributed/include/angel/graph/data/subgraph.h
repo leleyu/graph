@@ -25,7 +25,7 @@ struct SubGraph {
     const int64_t max_neibor): nodes(nodes), neibors(neibors), max_neibor(max_neibor) {}
 
   /*
-   * retrieve the first-order (including neibors and its self) for a batch of nodes
+   * retrieve the first-order (including neighbors and its self) for a batch of nodes
    */
   torch::Tensor FirstOrder(const torch::Tensor& batch) const {
     assert(batch.dim() == 1);
@@ -53,11 +53,11 @@ struct SubGraph {
   }
 
   /*
-   * Construct the neibor index for batch nodes ``batch``,
+   * Construct the neighbor index for batch nodes ``batch``,
    * the orders of nodes is given in tensor ``order``.
    */
   std::tuple<torch::Tensor, torch::Tensor>
-  NeiborIndex(const torch::Tensor& batch,
+  NeighborIndex(const torch::Tensor& batch,
     const torch::Tensor& orders) const {
 
     // map store the order/index
@@ -81,10 +81,34 @@ struct SubGraph {
       assert((nodes[node + 1] - nodes[node]) <= max_neibor);
       f4[i] = nodes[node + 1] - nodes[node];
       size_t idx = 0;
-      // neibors for node
+      // neighbors for node
       for (size_t j = nodes[node]; j < nodes[node + 1]; j++)
         // set position, we add the position with 1 since we reserve the 0-dim as a tomb
         f3[i][idx++] = position[neibors[j]] + 1;
+    }
+
+    length = length.view({batch.size(0), 1});
+    return std::make_tuple(index, length);
+  }
+
+  std::tuple<torch::Tensor, torch::Tensor>
+  NeighborIndex(const torch::Tensor& batch) const {
+    auto options = torch::TensorOptions().dtype(torch::kInt64).requires_grad(false);
+    auto index = torch::zeros({batch.size(0), max_neibor}, options);
+    auto f1 = index.accessor<int64_t, 2>();
+
+    auto length = torch::zeros({batch.size(0)}, options);
+    auto f2 = length.accessor<int64_t, 1>();
+    auto f3 = batch.accessor<int64_t, 1>();
+
+    for (int i = 0; i < f3.size(0); i++) {
+      int64_t node = f3[i];
+      assert((nodes[node + 1] - nodes[node]) <= max_neibor);
+      f2[i] = nodes[node + 1] - nodes[node];
+
+      size_t idx = 0;
+      for (int j = nodes[node]; j < nodes[node + 1]; j++)
+        f1[i][idx++] = neibors[j];
     }
 
     length = length.view({batch.size(0), 1});

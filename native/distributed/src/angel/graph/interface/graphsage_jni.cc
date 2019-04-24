@@ -13,8 +13,7 @@
  */
 JNIEXPORT jfloatArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_forward
   (JNIEnv *env, jobject jobj, jlong jptr,
-    jfloatArray jself_embeddings,
-    jfloatArray jneibor_embeddings,
+    jfloatArray jinput_embeddings,
     jintArray jbatch, // batch of node
     jint jmax_neibor, // maximum number of neibors
     jintArray jnodes, // graph structures
@@ -22,20 +21,20 @@ JNIEXPORT jfloatArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_forwa
   jboolean is_copy;
 
   // Get primitive arrays.
-  DEFINE_PRIMITIVE_ARRAYS5(jself_embeddings, jneibor_embeddings, jbatch, jnodes, jneibors);
+  DEFINE_PRIMITIVE_ARRAYS4(jinput_embeddings, jbatch, jnodes, jneibors);
   // model ptr
   DEFINE_MODEL_PTR(angel::graph::SupervisedGraphSage, jptr);
   int embedding_dim = ptr->GetDim();
   // embeddings
-  DEFINE_EMBEDDINGS(jself_embeddings, jneibor_embeddings, embedding_dim);
+  DEFINE_EMBEDDINGS(jinput_embeddings, embedding_dim);
   // graph structures
   DEFINE_GRAPH_STRUCTURE(jnodes, jneibors, jmax_neibor);
   // input nodes
   DEFINE_TORCH_TENSOR(jbatch, torch::kInt64);
   // Forward
-  auto output = ptr->Forward(jbatch_tensor, sub_graph, self_embeddings, neibor_embeddings);
+  auto output = ptr->Forward(jbatch_tensor, sub_graph, input_embeddings);
   // Release them
-  RELEASE_PRIMITIVE_ARRAYS5(jself_embeddings, jneibor_embeddings, jbatch, jnodes, jneibors);
+  RELEASE_PRIMITIVE_ARRAYS4(jinput_embeddings, jbatch, jnodes, jneibors);
 
   // Return
   auto output_ptr = output.data_ptr();
@@ -65,7 +64,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_getK
   auto* ptr = reinterpret_cast<angel::graph::SupervisedGraphSage*>(jptr);
   std::vector<std::string> keys = ptr->keys();
 
-  jsize len = static_cast<int>(keys.size());
+  auto len = static_cast<int>(keys.size());
   jclass stringClass = env->FindClass("java/lang/String");
   jobjectArray strings = env->NewObjectArray(len, stringClass, env->NewStringUTF(""));
   for (jsize i = 0; i < len; i++) {

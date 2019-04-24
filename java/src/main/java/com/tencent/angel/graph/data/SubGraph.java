@@ -12,7 +12,7 @@ public class SubGraph {
   private int[] nodes;
   private int[] neighbors;
   private int maxNeighbor;
-  private Int2IntOpenHashMap index;
+  public Int2IntOpenHashMap index;
 
   public SubGraph(int[] nodes, int[] neighbors, int maxNeighbor) {
     this.nodes = nodes;
@@ -121,10 +121,11 @@ public class SubGraph {
       }
     }
 
-    for (int i = start; i < subNeighbors.size(); i++)
-      index.put(subNeighbors.getInt(i), index.size());
+    for (int i = start; i < subNeighbors.size(); i++) {
+      if (!index.containsKey(subNeighbors.getInt(i)))
+        index.put(subNeighbors.getInt(i), index.size());
+    }
 
     return new SubGraph(startIndex.toIntArray(), subNeighbors.toIntArray(), numSample, index);
-
   }
 }

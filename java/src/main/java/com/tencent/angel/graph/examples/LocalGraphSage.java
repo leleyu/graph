@@ -5,13 +5,17 @@ import com.tencent.angel.graph.data.NodeLabel;
 import com.tencent.angel.graph.data.SparseNodeEmbedding;
 import com.tencent.angel.graph.data.SubGraph;
 import com.tencent.angel.graph.model.SupervisedGraphSage;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrays;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 
 import java.io.BufferedReader;
 import java.io.File;
-
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Random;
 
 public class LocalGraphSage {
 
@@ -81,26 +85,45 @@ public class LocalGraphSage {
     nodeLabel = new NodeLabel(labels);
   }
 
-  public SparseNodeEmbedding fetchSelfEmbeddings(NodeArray batch) {
-    int dim = inputEmbeddings.getDim();
-    int[] nodes = batch.getNodes();
-    SparseNodeEmbedding selfEmbedding = new SparseNodeEmbedding(nodes.length, dim);
-    for (int i = 0; i < nodes.length; i++)
-      inputEmbeddings.copy(nodes[i], i, selfEmbedding.getEmbeddings());
+  public void train(int[] trainNodes, int[] testNodes,
+                    int numEpoch, int batchSize,
+                    SupervisedGraphSage model) {
 
-    return selfEmbedding;
+    IntArrays.shuffle(trainNodes, new Random(System.currentTimeMillis()));
+    int[] batch = new int[batchSize];
+    int idx = 0;
+    for (int epoch = 1; epoch <= numEpoch; epoch++) {
+      for (int i = 0; i < trainNodes.length; i++) {
+        batch[idx++] = trainNodes[i];
+        if (idx >= batchSize) {
+          int[] targets = nodeLabel.getLabels(batch);
+          trainBatch(batch, targets, model);
+          idx = 0;
+        }
+      }
+
+      // some left nodes
+    }
+
   }
 
-  public SparseNodeEmbedding fetchNeiborEmbeddings(NodeArray batch) {
-    int dim = inputEmbeddings.getDim();
-    int[] nodes = batch.getNodes();
-    SparseNodeEmbedding neiborEmbedding = new SparseNodeEmbedding(nodes.length, dim);
+  public double trainBatch(int[] trainNodes, int[] targets, SupervisedGraphSage model) {
+    SubGraph subGraph = graph.sample(trainNodes, 3, numSample);
+    Int2IntOpenHashMap index = subGraph.index;
+    int size = index.size();
+    int[] third = new int[size];
+    ObjectIterator<Int2IntMap.Entry> it = index.int2IntEntrySet().fastIterator();
+    while (it.hasNext()) {
+      Int2IntMap.Entry entry = it.next();
+      int idx = entry.getIntValue();
+      int node = entry.getIntKey();
+      third[idx] = node;
+    }
 
-    return null;
-  }
+    SparseNodeEmbedding batchEmbeddings = inputEmbeddings.subEmbeddings(new NodeArray(third));
+    float[] output = model.forward(batchEmbeddings, new NodeArray(trainNodes), subGraph);
 
-  public void train(int[] trainNodes, int[] testNodes, SupervisedGraphSage model) {
-
+    return 0.0;
   }
 
   public static void main(String[] argv) throws IOException {
@@ -123,6 +146,27 @@ public class LocalGraphSage {
     System.out.println("here");
     for (int i = 0; i < keys.length; i++)
       System.out.println(keys[i]);
+
+
+    // split nodes
+    IntArrayList trainNodes = new IntArrayList();
+    IntArrayList testNodes = new IntArrayList();
+
+    Random random = new Random(System.currentTimeMillis());
+    for (int node = 0; node < N; node++) {
+      if (random.nextFloat() < 0.5)
+        trainNodes.add(node);
+      else
+        testNodes.add(node);
+    }
+
+    int numEpoch = 10;
+    int batchSize = 32;
+
+    graphsage.train(trainNodes.toIntArray(),
+       testNodes.toIntArray(),
+       numEpoch, batchSize,
+       model);
 
     model.destory();
 

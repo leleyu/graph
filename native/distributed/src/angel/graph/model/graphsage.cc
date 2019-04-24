@@ -24,10 +24,9 @@ SupervisedGraphSage::SupervisedGraphSage(int input_dim,
 torch::Tensor
 SupervisedGraphSage::Forward(const torch::Tensor &nodes,
   const SubGraph &sub_graph,
-  const torch::Tensor &self_embeddings,
-  const torch::Tensor &neibor_embeddings) {
+  const torch::Tensor &input_embeddings) {
   auto output = ComputeOutput(nodes, layers.size() - 1,
-    sub_graph, self_embeddings, neibor_embeddings);
+    sub_graph, input_embeddings);
   // normalization
   auto norm = output.norm(2, 1)
     .view({-1, 1})
@@ -41,27 +40,25 @@ torch::Tensor
 SupervisedGraphSage::ComputeOutput(const torch::Tensor &nodes,
   int layer,
   const SubGraph &sub_graph,
-  const torch::Tensor &self_embeddings,
-  const torch::Tensor &neibor_embeddings) {
+  const torch::Tensor &input_embeddings) {
 
   if (layer > 0) {
-    // compute the output of its neibors and self
+    // compute the output of its neighbors and self
     auto first = sub_graph.FirstOrder(nodes);
-    auto output = ComputeOutput(first, layer - 1, sub_graph, self_embeddings, neibor_embeddings);
+    auto output = ComputeOutput(first, layer - 1, sub_graph, input_embeddings);
     return layers[layer]->Forward(nodes, sub_graph, first, output);
   } else {
     // use the input embeddings
-    return layers[layer]->Forward(nodes, self_embeddings, neibor_embeddings);
+    return layers[layer]->Forward(nodes, sub_graph, input_embeddings);
   }
 }
 
 std::map<std::string, torch::Tensor>
 SupervisedGraphSage::Backward(const torch::Tensor &nodes,
   const angel::graph::SubGraph &sub_graph,
-  const torch::Tensor &self_embeddings,
-  const torch::Tensor &neibor_embeddings,
+  const torch::Tensor &input_embeddings,
   const torch::Tensor &targets) {
-  auto y_pred = Forward(nodes, sub_graph, self_embeddings, neibor_embeddings);
+  auto y_pred = Forward(nodes, sub_graph, input_embeddings);
   auto loss = torch::nll_loss(log_softmax(y_pred, 1), targets);
   loss.backward();
   // return weights grads

@@ -29,8 +29,7 @@ class SupervisedGraphSage : public torch::nn::Module {
    */
   virtual torch::Tensor Forward(const torch::Tensor& nodes,
     const SubGraph& sub_graph,
-    const torch::Tensor& self_embeddings,
-    const torch::Tensor& neibor_embeddings);
+    const torch::Tensor& input_embeddings);
 
   /**
    * Compute the output of layer ``layer``, this method will recursively compute
@@ -45,13 +44,11 @@ class SupervisedGraphSage : public torch::nn::Module {
   torch::Tensor ComputeOutput(const torch::Tensor& nodes,
     int layer,
     const SubGraph& sub_graph,
-    const torch::Tensor& self_embeddings,
-    const torch::Tensor& neibor_embeddings);
+    const torch::Tensor& input_embeddings);
 
   virtual std::map<std::string, torch::Tensor> Backward(const torch::Tensor &nodes,
     const SubGraph& sub_graph,
-    const torch::Tensor &self_embeddings,
-    const torch::Tensor &neibor_embeddings,
+    const torch::Tensor &input_embeddings,
     const torch::Tensor &targets);
 
   int32_t GetDim();

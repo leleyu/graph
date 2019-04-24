@@ -58,6 +58,11 @@ class MeanImpl : public torch::nn::Cloneable<MeanImpl> {
     const torch::Tensor &first,
     const torch::Tensor &embeddings);
 
+
+  torch::Tensor Forward(const torch::Tensor& nodes,
+      const SubGraph& sub_graph,
+      const torch::Tensor &embeddings);
+
   /**
    * Combine the embeddings of self and neibors after aggregating.
    * @param self

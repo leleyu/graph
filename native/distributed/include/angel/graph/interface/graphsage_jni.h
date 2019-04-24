@@ -13,7 +13,7 @@ extern "C" {
  * Signature: (J[F[F[II[I[I)[F
  */
 JNIEXPORT jfloatArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_forward
-  (JNIEnv *, jobject, jlong, jfloatArray, jfloatArray, jintArray, jint, jintArray, jintArray);
+  (JNIEnv *, jobject, jlong, jfloatArray, jintArray, jint, jintArray, jintArray);
 
 /*
  * Class:     com_tencent_angel_graph_model_GraphSage

@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     com_tencent_angel_graph_model_SupervisedGraphSage
  * Method:    backward
- * Signature: (J[F[F[II[I[I[I[Ljava/lang/String;)[[F
+ * Signature: (J[F[II[I[I[I[Ljava/lang/String;)[[F
  */
 JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_SupervisedGraphSage_backward
-  (JNIEnv *, jobject, jlong, jfloatArray, jfloatArray, jintArray, jint, jintArray, jintArray, jintArray, jobjectArray);
+  (JNIEnv *, jobject, jlong, jfloatArray, jintArray, jint, jintArray, jintArray, jintArray, jobjectArray);
 
 /*
  * Class:     com_tencent_angel_graph_model_SupervisedGraphSage

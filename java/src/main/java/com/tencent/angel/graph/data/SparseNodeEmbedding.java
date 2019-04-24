@@ -6,9 +6,13 @@ public class SparseNodeEmbedding {
   private int size; // number of embedding vectors
 
   public SparseNodeEmbedding(int size, int dim) {
-    embeddings = new float[size * dim];
+    this(size, dim, new float[size * dim]);
+  }
+
+  public SparseNodeEmbedding(int size, int dim, float[] embeddings) {
     this.dim = dim;
     this.size = size;
+    this.embeddings = embeddings;
   }
 
   public void set(int index, int offset, float value) {
@@ -35,10 +39,34 @@ public class SparseNodeEmbedding {
     System.arraycopy(embeddings, index * dim, destination, start * dim, dim);
   }
 
-  public void aggregate(int node, SubGraph graph, int numSamples, int index, float[] destination) {
+  public void aggregate(int node, SubGraph graph, int index, float[] destination) {
     int[] nodes = graph.getNodes();
+    int[] neighbors = graph.getNeighbors();
     int length = nodes[node + 1] - nodes[node];
 
+    // sum for neighbors
+    for (int j = 0; j < length; j++) {
+      int neighbor = neighbors[nodes[node] + j];
+      for (int k = 0; k < dim; k++)
+        destination[index * dim + k] += embeddings[neighbor * dim + k];
+    }
+
+    // average
+    for (int k = 0; k < dim; k++)
+      destination[index * dim + k] /= length;
+  }
+
+  public SparseNodeEmbedding subEmbeddings(NodeArray nodes) {
+    int[] ns = nodes.getNodes();
+    int len = ns.length;
+    float[] values = new float[len * dim];
+    for (int i = 0; i < len; i += dim) {
+      int node = ns[i];
+      for (int j = 0; j < dim; j++) {
+        values[i + j] = embeddings[node * dim + j];
+      }
+    }
+    return new SparseNodeEmbedding(len, dim, values);
   }
 
 

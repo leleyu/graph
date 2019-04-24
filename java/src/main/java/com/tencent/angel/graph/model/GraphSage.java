@@ -23,20 +23,19 @@ public abstract class GraphSage {
     destroyNetwork(ptr);
   }
 
-  public float[] forward(SparseNodeEmbedding selfEmbeddings,
-                         SparseNodeEmbedding neiborEmbeddings,
+  public float[] forward(SparseNodeEmbedding inputEmbeddings,
                          NodeArray nodes,
-                         SubGraph subGraph,
-                         NodeIndex index) {
-    return forward(ptr, selfEmbeddings.getEmbeddings(), neiborEmbeddings.getEmbeddings(),
-      nodes.getNodes(), subGraph.getMaxNeighbor(), subGraph.getNodes(), subGraph.getNeighbors());
+                         SubGraph subGraph) {
+    return forward(ptr, inputEmbeddings.getEmbeddings(),
+      nodes.getNodes(), subGraph.getMaxNeighbor(),
+       subGraph.getNodes(), subGraph.getNeighbors());
   }
 
   private native float[] forward(long ptr, // model ptr
-                                 float[] selfEmbeddings, float[] neiborEmbeddings, // embedding vectors
+                                 float[] selfEmbeddings, // embedding vectors
                                  int[] batch, // batch of nodes
                                  // graph structure
-                                 int maxNeibor,
+                                 int maxNeighbor,
                                  int[] nodes, int[] neibors);
 
 

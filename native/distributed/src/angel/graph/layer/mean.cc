@@ -35,19 +35,29 @@ torch::Tensor MeanImpl::Forward(
   const torch::Tensor &first,
   const torch::Tensor &embeddings) {
 
-  int64_t num_nodes = nodes.size(0);
-  int64_t max_neibor = sub_graph.max_neibor;
-
-  // construct the index with sub-graph (neibors)
+  // construct the index with sub-graph (neighbors)
   torch::Tensor index;
   torch::Tensor length;
-  std::tie(index, length) = sub_graph.NeiborIndex(nodes, first);
-  auto neibors = torch::embedding(embeddings, index, -1, false, true);
+  std::tie(index, length) = sub_graph.NeighborIndex(nodes, first);
+  auto neighbors = torch::embedding(embeddings, index, -1, false, true);
   // calculate average for each node.
-  neibors = neibors.sum(1).div(length);
+  neighbors = neighbors.sum(1).div(length);
   auto self = torch::embedding(embeddings, nodes, -1, false, true);
 
-  return Combine(self, neibors);
+  return Combine(self, neighbors);
+}
+
+torch::Tensor MeanImpl::Forward(const torch::Tensor &nodes,
+    const SubGraph &sub_graph,
+    const torch::Tensor &embeddings) {
+  torch::Tensor index;
+  torch::Tensor length;
+  std::tie(index, length) = sub_graph.NeighborIndex(nodes);
+
+  auto neighbors = torch::embedding(embeddings, index, -1, false, true);
+  neighbors = neighbors.sum(1).div(length);
+  auto self = torch::embedding(embeddings, nodes, -1, false, true);
+  return Combine(self, neighbors);
 }
 
 torch::Tensor MeanImpl::Forward(const torch::Tensor &nodes,
@@ -62,7 +72,7 @@ torch::Tensor MeanImpl::Forward(const torch::Tensor &nodes,
 
   // self is [batch_size, embedding_dim]
   auto self = torch::embedding(self_embeddings, nodes, -1, false, true);
-  // neibor is [batch_size, embedding_dim]
+  // neighbor is [batch_size, embedding_dim]
   auto neibor = torch::embedding(neibor_embeddings, nodes, -1, false, true);
 
   return Combine(self, neibor);
