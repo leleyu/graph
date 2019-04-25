@@ -56,11 +56,46 @@
   auto size = length / embedding_dim; \
   auto input_embeddings = torch::from_blob(jinput_embeddings##_cptr, {size, embedding_dim});
 
-#define DEFINE_GRAPH_STRUCTURE(jnodes, jneibors, jmax_neibor) \
+#define DEFINE_GRAPH_STRUCTURE(jnodes, jneighbors, jmax_neighbor) \
   auto* cinodes = static_cast<int32_t*>(jnodes_##cptr); \
-  auto* cineibors = static_cast<int32_t*>(jneibors_##cptr); \
+  auto* cineighbors = static_cast<int32_t*>(jneighbors_##cptr); \
   std::vector<int32_t> nodes(cinodes, cinodes + env->GetArrayLength(jnodes)); \
-  std::vector<int32_t> neibors(cineibors, cineibors + env->GetArrayLength(jneibors)); \
-  angel::graph::SubGraph sub_graph(nodes, neibors, jmax_neibor);
+  std::vector<int32_t> neighbors(cineighbors, cineighbors + env->GetArrayLength(jneighbors)); \
+  angel::graph::SubGraph sub_graph(nodes, neighbors, jmax_neighbor);
+
+// define torch tensors
+
+#define TORCH_OPTION_INT64 \
+  (torch::TensorOptions().dtype(torch::kInt64).requires_grad(false))
+
+#define TORCH_OPTION_INT32 \
+  (torch::TensorOptions().dtype(torch::kInt32).requires_grad(false))
+
+#define TORCH_OPTION_FLOAT \
+  (torch::TensorOptions().requires_grad(false))
+
+#define DEFINE_ZEROS_DIM2_INT64(_name, dim1, dim2) \
+  auto _name = torch::zeros({dim1, dim2}, TORCH_OPTION_INT64);
+
+#define DEFINE_ZEROS_DIM2_FLOAT(_name, dim1, dim2) \
+  auto _name = torch::zeros({dim1, dim2}, TORCH_OPTION_FLOAT);
+
+#define DEFINE_ZEROS_DIM1_INT64(_name, dim1) \
+  auto _name = torch::zeros({dim1}, TORCH_OPTION_INT64);
+
+#define DEFINE_ZEROS_DIM1_INT32(_name, dim1) \
+  auto _name = torch::zeros({dim1}, TORCH_OPTION_INT32);
+
+#define DEFINE_ACCESSOR_DIM1_INT64(_tensor) \
+  auto _tensor##_acr = _tensor.accessor<int64_t, 1>();
+
+#define DEFINE_ACCESSOR_DIM1_INT32(_tensor) \
+  auto _tensor##_acr = _tensor.accessor<int32_t, 1>();
+
+#define DEFINE_ACCESSOR_DIM2_INT64(_tensor) \
+  auto _tensor##_acr = _tensor.accessor<int64_t, 2>();
+
+#define DEFINE_ACCESSOR_DIM2_FLOAT(_tensor) \
+  auto _tensor##_acr = _tensor.accessor<float, 2>();
 
 #endif //GRAPH_INTERFACE_COMMONS_H

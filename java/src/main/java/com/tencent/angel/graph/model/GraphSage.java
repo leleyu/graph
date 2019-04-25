@@ -1,7 +1,6 @@
 package com.tencent.angel.graph.model;
 
 import com.tencent.angel.graph.data.NodeArray;
-import com.tencent.angel.graph.data.NodeIndex;
 import com.tencent.angel.graph.data.SparseNodeEmbedding;
 import com.tencent.angel.graph.data.SubGraph;
 
@@ -27,7 +26,7 @@ public abstract class GraphSage {
                          NodeArray nodes,
                          SubGraph subGraph) {
     return forward(ptr, inputEmbeddings.getEmbeddings(),
-      nodes.getNodes(), subGraph.getMaxNeighbor(),
+      nodes.getNodes(), subGraph.getMaxNumNgb(),
        subGraph.getNodes(), subGraph.getNeighbors());
   }
 
@@ -36,7 +35,7 @@ public abstract class GraphSage {
                                  int[] batch, // batch of nodes
                                  // graph structure
                                  int maxNeighbor,
-                                 int[] nodes, int[] neibors);
+                                 int[] nodes, int[] neighbors);
 
 
   private native void destroyNetwork(long ptr);

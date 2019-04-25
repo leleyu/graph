@@ -30,19 +30,6 @@ class MeanImpl : public torch::nn::Cloneable<MeanImpl> {
 
   explicit MeanImpl(MeanOptions options);
 
-  /**
-   * Forward in the last layer, which directly use the embeddings for
-   * neibors from ``neibor_embeddings``. The ``neibor_embeddings`` is
-   * aggregated from parameter server.
-   * @param nodes, nodes in this batch
-   * @param self_embeddings, embeddings for this batch
-   * @param neibor_embeddings, neibors' aggregate embeddings for this batch
-   * @return
-   */
-  torch::Tensor Forward(const torch::Tensor& nodes,
-    const torch::Tensor &self_embeddings,
-    const torch::Tensor &neibor_embeddings);
-
 
   /**
    * Forward in the [0,last) layer, which requires to manually calculate
@@ -70,7 +57,7 @@ class MeanImpl : public torch::nn::Cloneable<MeanImpl> {
    * @return
    */
   torch::Tensor Combine(const torch::Tensor &self,
-    const torch::Tensor &neibors);
+    const torch::Tensor &neighbors);
 
   void reset() override;
 

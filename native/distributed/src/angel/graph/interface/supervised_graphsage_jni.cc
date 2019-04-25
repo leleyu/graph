@@ -3,7 +3,7 @@
 //
 
 #include <angel/graph/interface/supervised_graphsage_jni.h>
-#include <angel/graph/interface/commons.h>
+#include <angel/graph/commons.h>
 #include <angel/graph/model/graphsage.h>
 
 
@@ -18,14 +18,14 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_SupervisedGrap
     jintArray jbatch,
     jint jmax_neibor,
     jintArray jnodes,
-    jintArray jneibors,
+    jintArray jneighbors,
     jintArray jtargets,
     jobjectArray jkeys) {
 
   jboolean is_copy;
 
   // Get primitive arrays.
-  DEFINE_PRIMITIVE_ARRAYS5(jinput_embeddings, jbatch, jnodes, jneibors, jtargets);
+  DEFINE_PRIMITIVE_ARRAYS5(jinput_embeddings, jbatch, jnodes, jneighbors, jtargets);
 
   // model ptr
   DEFINE_MODEL_PTR(angel::graph::SupervisedGraphSage, jptr);
@@ -35,7 +35,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_SupervisedGrap
   DEFINE_EMBEDDINGS(jinput_embeddings, embedding_dim);
 
   // graph structures
-  DEFINE_GRAPH_STRUCTURE(jnodes, jneibors, jmax_neibor);
+  DEFINE_GRAPH_STRUCTURE(jnodes, jneighbors, jmax_neibor);
 
   // input nodes
   DEFINE_TORCH_TENSOR(jbatch, torch::kInt64);
@@ -45,7 +45,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_SupervisedGrap
   auto grads = ptr->Backward(jbatch_tensor, sub_graph, input_embeddings, jtargets_tensor);
 
   // Release them
-  RELEASE_PRIMITIVE_ARRAYS5(jinput_embeddings, jbatch, jnodes, jneibors, jtargets);
+  RELEASE_PRIMITIVE_ARRAYS5(jinput_embeddings, jbatch, jnodes, jneighbors, jtargets);
 
   // create a two-dimensional array
   int n_keys = env->GetArrayLength(jkeys);

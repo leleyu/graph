@@ -19,11 +19,11 @@ void MeanImpl::reset() {
 }
 
 torch::Tensor MeanImpl::Combine(const torch::Tensor &self,
-  const torch::Tensor &neibors) {
-  // cat self and neibor
+  const torch::Tensor &neighbors) {
+  // cat self and neighbors
   std::vector<torch::Tensor> tensors;
   tensors.push_back(self);
-  tensors.push_back(neibors);
+  tensors.push_back(neighbors);
   torch::TensorList list(tensors.data(), tensors.size());
   auto combine = torch::cat(list, 1);
   return torch::relu(combine.matmul(weight));
@@ -37,11 +37,17 @@ torch::Tensor MeanImpl::Forward(
 
   // construct the index with sub-graph (neighbors)
   torch::Tensor index;
+  torch::Tensor value;
   torch::Tensor length;
-  std::tie(index, length) = sub_graph.NeighborIndex(nodes, first);
+  std::tie(index, value, length) = sub_graph.GetNeighborIndexValue(nodes, first);
+  // index is [batch_size, max_neighbor], value is [batch_size, max_neighbor, 1]
+  // length is [batch_size, 1]
   auto neighbors = torch::embedding(embeddings, index, -1, false, true);
+  // neighbors is [batch_size, max_neighbor, dim]
+
+  neighbors = neighbors.mul(value);
   // calculate average for each node.
-  neighbors = neighbors.sum(1).div(length);
+  neighbors = neighbors.sum(2).div(length);
   auto self = torch::embedding(embeddings, nodes, -1, false, true);
 
   return Combine(self, neighbors);
@@ -51,31 +57,16 @@ torch::Tensor MeanImpl::Forward(const torch::Tensor &nodes,
     const SubGraph &sub_graph,
     const torch::Tensor &embeddings) {
   torch::Tensor index;
+  torch::Tensor value;
   torch::Tensor length;
-  std::tie(index, length) = sub_graph.NeighborIndex(nodes);
+  std::tie(index, value, length) = sub_graph.GetNeighborIndexValue(nodes);
 
   auto neighbors = torch::embedding(embeddings, index, -1, false, true);
-  neighbors = neighbors.sum(1).div(length);
+  neighbors = neighbors.mul(value);
+  neighbors = neighbors.sum(2).div(length);
   auto self = torch::embedding(embeddings, nodes, -1, false, true);
   return Combine(self, neighbors);
 }
 
-torch::Tensor MeanImpl::Forward(const torch::Tensor &nodes,
-  const torch::Tensor &self_embeddings,
-  const torch::Tensor &neibor_embeddings) {
-
-  // batch_size = nodes.size(0)
-  // embedding_dim = self_embeddings.size(1)
-
-  assert(self_embeddings.dim() == 2);
-  assert(self_embeddings.dim() == 2);
-
-  // self is [batch_size, embedding_dim]
-  auto self = torch::embedding(self_embeddings, nodes, -1, false, true);
-  // neighbor is [batch_size, embedding_dim]
-  auto neibor = torch::embedding(neibor_embeddings, nodes, -1, false, true);
-
-  return Combine(self, neibor);
-}
 } // namespace graph
 } // namespace angel

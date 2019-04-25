@@ -1,5 +1,9 @@
 package com.tencent.angel.graph.data;
 
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+
 public class SparseNodeEmbedding {
   private float[] embeddings;
   private int dim; // dimension for one embedding vector
@@ -21,22 +25,6 @@ public class SparseNodeEmbedding {
 
   public float[] getEmbeddings() {
     return embeddings;
-  }
-
-  public int getSize() {
-    return size;
-  }
-
-  public void setSize(int size) {
-    this.size = size;
-  }
-
-  public int getDim() {
-    return dim;
-  }
-
-  public void copy(int index, int start, float[] destination) {
-    System.arraycopy(embeddings, index * dim, destination, start * dim, dim);
   }
 
   public void aggregate(int node, SubGraph graph, int index, float[] destination) {
@@ -67,6 +55,19 @@ public class SparseNodeEmbedding {
       }
     }
     return new SparseNodeEmbedding(len, dim, values);
+  }
+
+  public SparseNodeEmbedding subEmbeddings(SubGraph subGraph) {
+    int size = subGraph.index.size();
+    float[] values = new float[size * dim];
+    ObjectIterator<Int2IntMap.Entry> it = subGraph.index.int2IntEntrySet().fastIterator();
+    while (it.hasNext()) {
+      Int2IntMap.Entry entry = it.next();
+      int nodeIdx = entry.getIntValue();
+      int node = entry.getIntKey();
+      System.arraycopy(embeddings, node * dim, values, nodeIdx * dim, dim);
+    }
+    return new SparseNodeEmbedding(size, dim, values);
   }
 
 

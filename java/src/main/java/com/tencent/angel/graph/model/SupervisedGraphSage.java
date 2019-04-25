@@ -1,7 +1,6 @@
 package com.tencent.angel.graph.model;
 
 import com.tencent.angel.graph.data.NodeArray;
-import com.tencent.angel.graph.data.NodeIndex;
 import com.tencent.angel.graph.data.SparseNodeEmbedding;
 import com.tencent.angel.graph.data.SubGraph;
 
@@ -26,7 +25,7 @@ public class SupervisedGraphSage extends GraphSage {
                                        NodeArray targets) {
     float[][] gradients = backward(ptr, inputEmbeddings.getEmbeddings(),
        nodes.getNodes(),
-       subGraph.getMaxNeighbor(),
+       subGraph.getMaxNumNgb(),
        subGraph.getNodes(),
        subGraph.getNodes(),
        targets.getNodes(),

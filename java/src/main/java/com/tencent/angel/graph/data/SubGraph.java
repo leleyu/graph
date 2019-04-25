@@ -2,26 +2,25 @@ package com.tencent.angel.graph.data;
 
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 
 import java.util.Random;
 
 public class SubGraph {
 
-  // start index of nodes, assuming that the nodes index is encoded from 1. length = n + 1
+  // start index of nodes, assuming that the nodes index is encoded from 0. length = n + 1
   private int[] nodes;
   private int[] neighbors;
-  private int maxNeighbor;
+  private int maxNumNgb;
   public Int2IntOpenHashMap index;
 
-  public SubGraph(int[] nodes, int[] neighbors, int maxNeighbor) {
+  public SubGraph(int[] nodes, int[] neighbors, int maxNumNgb) {
     this.nodes = nodes;
     this.neighbors = neighbors;
-    this.maxNeighbor = maxNeighbor;
+    this.maxNumNgb = maxNumNgb;
   }
 
-  public SubGraph(int[] nodes, int[] neighbors, int maxNeighbor, Int2IntOpenHashMap index) {
-    this(nodes, neighbors, maxNeighbor);
+  public SubGraph(int[] nodes, int[] neighbors, int maxNumNgb, Int2IntOpenHashMap index) {
+    this(nodes, neighbors, maxNumNgb);
     this.index = index;
   }
 
@@ -34,8 +33,8 @@ public class SubGraph {
     return neighbors;
   }
 
-  public int getMaxNeighbor() {
-    return maxNeighbor;
+  public int getMaxNumNgb() {
+    return maxNumNgb;
   }
 
   public SubGraph() {}
@@ -95,11 +94,8 @@ public class SubGraph {
     IntArrayList startIndex = new IntArrayList();
     IntArrayList subNeighbors = new IntArrayList();
 
+    index.defaultReturnValue(-1);
     startIndex.add(0);
-
-    IntOpenHashSet roots = new IntOpenHashSet();
-    for (int i = 0; i < batch.length; i++)
-      roots.add(batch[i]);
 
     int start = 0;
 
@@ -127,5 +123,11 @@ public class SubGraph {
     }
 
     return new SubGraph(startIndex.toIntArray(), subNeighbors.toIntArray(), numSample, index);
+  }
+
+  public void reindex() {
+    // reindex neighbors
+    for (int i = 0; i < neighbors.length; i++)
+      neighbors[i] = index.get(neighbors[i]);
   }
 }

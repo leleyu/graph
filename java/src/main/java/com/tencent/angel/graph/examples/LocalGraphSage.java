@@ -109,18 +109,8 @@ public class LocalGraphSage {
 
   public double trainBatch(int[] trainNodes, int[] targets, SupervisedGraphSage model) {
     SubGraph subGraph = graph.sample(trainNodes, 3, numSample);
-    Int2IntOpenHashMap index = subGraph.index;
-    int size = index.size();
-    int[] third = new int[size];
-    ObjectIterator<Int2IntMap.Entry> it = index.int2IntEntrySet().fastIterator();
-    while (it.hasNext()) {
-      Int2IntMap.Entry entry = it.next();
-      int idx = entry.getIntValue();
-      int node = entry.getIntKey();
-      third[idx] = node;
-    }
-
-    SparseNodeEmbedding batchEmbeddings = inputEmbeddings.subEmbeddings(new NodeArray(third));
+    SparseNodeEmbedding batchEmbeddings = inputEmbeddings.subEmbeddings(subGraph);
+    subGraph.reindex();
     float[] output = model.forward(batchEmbeddings, new NodeArray(trainNodes), subGraph);
 
     return 0.0;
@@ -143,7 +133,6 @@ public class LocalGraphSage {
     int[] outputDims = {10, 5};
     SupervisedGraphSage model = new SupervisedGraphSage(numClass, F, outputDims);
     String[] keys = model.keys();
-    System.out.println("here");
     for (int i = 0; i < keys.length; i++)
       System.out.println(keys[i]);
 

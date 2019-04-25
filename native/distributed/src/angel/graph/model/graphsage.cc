@@ -44,7 +44,7 @@ SupervisedGraphSage::ComputeOutput(const torch::Tensor &nodes,
 
   if (layer > 0) {
     // compute the output of its neighbors and self
-    auto first = sub_graph.FirstOrder(nodes);
+    auto first = sub_graph.GetFirstOrder(nodes);
     auto output = ComputeOutput(first, layer - 1, sub_graph, input_embeddings);
     return layers[layer]->Forward(nodes, sub_graph, first, output);
   } else {
