@@ -23,8 +23,7 @@ class SupervisedGraphSage : public torch::nn::Module {
    * Forward method for SupervisedGraphSage
    * @param nodes
    * @param sub_graph
-   * @param self_embeddings
-   * @param neibor_embeddings
+   * @param input_embeddings
    * @return
    */
   virtual torch::Tensor Forward(const torch::Tensor& nodes,
@@ -51,12 +50,19 @@ class SupervisedGraphSage : public torch::nn::Module {
     const torch::Tensor &input_embeddings,
     const torch::Tensor &targets);
 
+
+  virtual double Fit(const torch::Tensor &nodes,
+      const SubGraph& sub_graph,
+      const torch::Tensor &input_embeddings,
+      const torch::Tensor &targets);
+
   int32_t GetDim();
 
   std::vector<std::string> keys();
 
   std::vector<Mean> layers;
   torch::Tensor weight_;
+
   int num_class_;
 };
 

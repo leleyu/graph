@@ -12,12 +12,12 @@
  * Signature: (J[F[I[I[I)[F
  */
 JNIEXPORT jfloatArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_forward
-  (JNIEnv *env, jobject jobj, jlong jptr,
-    jfloatArray jinput_embeddings,
-    jintArray jbatch, // batch of node
-    jint jmax_neighbor, // maximum number of neighbors
-    jintArray jnodes, // graph structures
-    jintArray jneighbors) {
+    (JNIEnv *env, jobject jobj, jlong jptr,
+     jfloatArray jinput_embeddings,
+     jintArray jbatch, // batch of node
+     jint jmax_neighbor, // maximum number of neighbors
+     jintArray jnodes, // graph structures
+     jintArray jneighbors) {
   jboolean is_copy;
 
   // Get primitive arrays.
@@ -42,6 +42,18 @@ JNIEXPORT jfloatArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_forwa
   return output_ptr_jarray;
 }
 
+/*
+ * Class:     com_tencent_angel_graph_model_GraphSage
+ * Method:    fit
+ * Signature: (J[F[II[I[I[I)D
+ */
+JNIEXPORT jdouble JNICALL Java_com_tencent_angel_graph_model_GraphSage_fit
+    (JNIEnv *env, jobject jobj, jlong jptr,
+     jfloatArray, jintArray, jint, jintArray, jintArray, jintArray) {
+
+}
+
+
 
 /*
  * Class:     com_tencent_angel_graph_model_GraphSage
@@ -49,9 +61,9 @@ JNIEXPORT jfloatArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_forwa
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_com_tencent_angel_graph_model_GraphSage_destroyNetwork
-  (JNIEnv * env, jobject jobj, jlong jptr) {
-  auto* ptr = reinterpret_cast<angel::graph::SupervisedGraphSage*>(jptr);
-  delete(ptr);
+    (JNIEnv *env, jobject jobj, jlong jptr) {
+  auto *ptr = reinterpret_cast<angel::graph::SupervisedGraphSage *>(jptr);
+  delete (ptr);
 }
 
 /*

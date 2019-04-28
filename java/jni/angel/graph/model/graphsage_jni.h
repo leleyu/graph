@@ -17,6 +17,14 @@ JNIEXPORT jfloatArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_forwa
 
 /*
  * Class:     com_tencent_angel_graph_model_GraphSage
+ * Method:    fit
+ * Signature: (J[F[II[I[I[I)D
+ */
+JNIEXPORT jdouble JNICALL Java_com_tencent_angel_graph_model_GraphSage_fit
+  (JNIEnv *, jobject, jlong, jfloatArray, jintArray, jint, jintArray, jintArray, jintArray);
+
+/*
+ * Class:     com_tencent_angel_graph_model_GraphSage
  * Method:    destroyNetwork
  * Signature: (J)V
  */
