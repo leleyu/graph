@@ -5,7 +5,6 @@ public class SGD extends Optimizer {
 
   public SGD(float eta) {
     this.eta = eta;
-    this.
   }
 
   private native long init();

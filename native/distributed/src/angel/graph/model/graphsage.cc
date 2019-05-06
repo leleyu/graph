@@ -89,5 +89,11 @@ std::vector<std::string> SupervisedGraphSage::keys() {
 
   return keys;
 }
+
+
+double SupervisedGraphSage::Fit(const torch::Tensor &nodes, const angel::graph::SubGraph &sub_graph,
+                                const torch::Tensor &input_embeddings, const torch::Tensor &targets) {
+
+}
 } // namespace graph
 } // namespace angel

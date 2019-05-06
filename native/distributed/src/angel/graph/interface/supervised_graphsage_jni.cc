@@ -3,7 +3,7 @@
 //
 
 #include <angel/graph/interface/supervised_graphsage_jni.h>
-#include <angel/graph/commons.h>
+#include <angel/commons.h>
 #include <angel/graph/model/graphsage.h>
 
 
@@ -38,8 +38,8 @@ JNIEXPORT jobjectArray JNICALL Java_com_tencent_angel_graph_model_SupervisedGrap
   DEFINE_GRAPH_STRUCTURE(jnodes, jneighbors, jmax_neibor);
 
   // input nodes
-  DEFINE_TORCH_TENSOR(jbatch, torch::kInt64);
-  DEFINE_TORCH_TENSOR(jtargets, torch::kF32);
+  DEFINE_TORCH_TENSOR_ARRAY(jbatch, torch::kInt64);
+  DEFINE_TORCH_TENSOR_ARRAY(jtargets, torch::kF32);
 
   // Forward
   auto grads = ptr->Backward(jbatch_tensor, sub_graph, input_embeddings, jtargets_tensor);

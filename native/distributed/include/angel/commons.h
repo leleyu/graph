@@ -5,6 +5,17 @@
 #ifndef GRAPH_INTERFACE_COMMONS_H
 #define GRAPH_INTERFACE_COMMONS_H
 
+// convert primitives between java object and c++ object
+
+// strings
+#define DEFINE_STRING(_jstring) \
+  const char* jstring##_cstr_ptr = env->GetStringUTFChars(_jstring, NULL); \
+  std::string _jstring##_cstr(jstring##_cstr_ptr);
+
+#define RELEASE_STRING(_jstring) \
+  env->ReleaseStringUTFChars(_jstring, jstring##_cstr_ptr);
+
+// arrays
 #define DEFINE_PRIMITIVE_ARRAY(_jarray) \
   void* _jarray##_cptr = env->GetPrimitiveArrayCritical(_jarray, &is_copy);
 
@@ -14,9 +25,21 @@
 #define DEFINE_MODEL_PTR(MODEL_TYPE, jptr) \
   auto* ptr = reinterpret_cast<MODEL_TYPE*>(jptr);
 
-#define DEFINE_TORCH_TENSOR(_jarray, type) \
+#define DEFINE_TORCH_TENSOR_ARRAY(_jarray, type) \
   auto _jarray##_option = torch::TensorOptions().dtype(type).requires_grad(false); \
   auto _jarray##_tensor = torch::from_blob(_jarray##_cptr, {env->GetArrayLength(_jarray)}, _jarray##_option);
+
+#define DEFINE_TORCH_TENSOR_ARRAY_GRAD(_jarray, type) \
+  auto _jarray##_option = torch::TensorOptions().dtype(type).requires_grad(true);\
+  auto _jarray##_tensor = torch::from_blob(_jarray##_cptr, {env->GetArrayLength(_jarray)}, _jarray##_option);
+
+#define DEFINE_TORCH_TENSOR_SCALA(_jprimitive, type) \
+  auto _jprimitive##_option = torch::TensorOptions().dtype(type).requires_grad(false);\
+  auto _jprimitive##_tensor = torch::from_blob(&_jprimitive, {1}, _jprimitive##_option);
+
+#define DEFINE_TORCH_TENSOR_SCALA_GRAD(_jprimitive, type) \
+  auto _jprimitive##_option = torch::TensorOptions().dtype(type).requires_grad(true);\
+  auto _jprimitive##_tensor = torch::from_blob(&_jprimitive, {1}, _jprimitive##_option);
 
 #define DEFINE_JFLOATARRAY(_carray_ptr, len) \
   jfloatArray _carray_ptr##_jarray = env->NewFloatArray(len); \
@@ -62,6 +85,8 @@
   std::vector<int32_t> nodes(cinodes, cinodes + env->GetArrayLength(jnodes)); \
   std::vector<int32_t> neighbors(cineighbors, cineighbors + env->GetArrayLength(jneighbors)); \
   angel::graph::SubGraph sub_graph(nodes, neighbors, jmax_neighbor);
+
+
 
 // define torch tensors
 

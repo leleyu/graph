@@ -3,7 +3,7 @@
 //
 
 #include <angel/graph/interface/graphsage_jni.h>
-#include <angel/graph/commons.h>
+#include <angel/commons.h>
 #include <angel/graph/model/graphsage.h>
 
 /*
@@ -30,7 +30,7 @@ JNIEXPORT jfloatArray JNICALL Java_com_tencent_angel_graph_model_GraphSage_forwa
   // graph structures
   DEFINE_GRAPH_STRUCTURE(jnodes, jneighbors, jmax_neighbor);
   // input nodes
-  DEFINE_TORCH_TENSOR(jbatch, torch::kInt32);
+  DEFINE_TORCH_TENSOR_ARRAY(jbatch, torch::kInt32);
   // Forward
   auto output = ptr->Forward(jbatch_tensor, sub_graph, input_embeddings);
   // Release them
@@ -62,7 +62,8 @@ JNIEXPORT jdouble JNICALL Java_com_tencent_angel_graph_model_GraphSage_fit
  */
 JNIEXPORT void JNICALL Java_com_tencent_angel_graph_model_GraphSage_destroyNetwork
     (JNIEnv *env, jobject jobj, jlong jptr) {
-  auto *ptr = reinterpret_cast<angel::graph::SupervisedGraphSage *>(jptr);
+  DEFINE_MODEL_PTR(angel::graph::SupervisedGraphSage*, jptr);
+//  auto *ptr = reinterpret_cast<angel::graph::SupervisedGraphSage *>(jptr);
   delete (ptr);
 }
 
